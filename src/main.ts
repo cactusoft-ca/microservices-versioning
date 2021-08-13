@@ -7,9 +7,13 @@ async function run(): Promise<void> {
     const pull_number: string = core.getInput('pull_number')
     const owner: string = core.getInput('owner')
     const repo: string = core.getInput('pull_number')
+    const token: string = core.getInput('token')
 
     core.debug(`Checking labels for pull request number ${pull_number}`)
-    const octokit = new Octokit()
+    const octokit = new Octokit(
+    {
+      auth: `token ${token}`,
+    })
 
     const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
