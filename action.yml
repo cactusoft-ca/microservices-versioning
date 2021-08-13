@@ -1,11 +1,10 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Microservices versioning'
+description: 'This actions is about upping versions of each microservice automatically'
+author: 'Mostefa Kamal Lala'
 inputs:
-  milliseconds: # change this
+  pull_number:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'The pull request number'
 runs:
   using: 'node12'
   main: 'dist/index.js'
