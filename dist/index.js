@@ -47,7 +47,7 @@ function run() {
             const token = core.getInput('token');
             core.debug(`Checking labels for pull request number ${pull_number}`);
             const octokit = new rest_1.Octokit({
-                auth: `token ${token}`,
+                auth: token,
             });
             const pull = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
                 owner,

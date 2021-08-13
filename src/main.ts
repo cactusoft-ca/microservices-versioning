@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     core.debug(`Checking labels for pull request number ${pull_number}`)
     const octokit = new Octokit(
     {
-      auth: `token ${token}`,
+      auth: token,
     })
 
     const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
