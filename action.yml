@@ -5,6 +5,12 @@ inputs:
   pull_number:
     required: true
     description: 'The pull request number'
+  owner:
+    required: true
+    description: 'Owner of pull request repo'
+  repo:
+    required: true
+    description: 'Repo name'
 runs:
   using: 'node12'
   main: 'dist/index.js'

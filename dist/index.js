@@ -42,11 +42,13 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const pull_number = core.getInput('pull_number');
+            const owner = core.getInput('owner');
+            const repo = core.getInput('pull_number');
             core.debug(`Checking labels for pull request number ${pull_number}`);
             const octokit = new rest_1.Octokit();
             const pull = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
-                owner: 'octocat',
-                repo: 'hello-world',
+                owner,
+                repo,
                 pull_number: Number(pull_number)
             });
             core.debug(`Labels ${pull.data.labels}`);
