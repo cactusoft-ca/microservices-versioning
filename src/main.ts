@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 import {setFailed, getInput, debug} from '@actions/core'
-import {context, getOctokit} from '@actions/github'
+import { getOctokit ,context} from "@actions/github"
+
 
 async function run(): Promise<void> {
   try {
@@ -11,9 +12,7 @@ async function run(): Promise<void> {
 
     debug(`Context repo owner: ${context.repo.owner}`)
     debug(`Checking labels for pull request number ${pull_number}`)
-
     const octokit = getOctokit(token)
-
 
     const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
@@ -22,6 +21,8 @@ async function run(): Promise<void> {
     })
 
     debug(`Labels ${pull.data.labels}`)
+
+
   } catch (error) {
     setFailed(error.message)
   }
