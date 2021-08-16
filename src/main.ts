@@ -5,10 +5,10 @@ import { getOctokit ,context} from "@actions/github"
 
 async function run(): Promise<void> {
   try {
-    const pull_number: string = core.getInput('pull_number')
-    const owner: string = core.getInput('owner')
-    const repo: string = core.getInput('repo')
-    const token: string = core.getInput('token')
+    const pull_number: string = getInput('pull_number')
+    const owner: string = getInput('owner')
+    const repo: string = getInput('repo')
+    const token: string = getInput('token')
 
     debug(`Context repo owner: ${context.repo.owner}`)
     debug(`Checking labels for pull request number ${pull_number}`)
