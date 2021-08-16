@@ -1,19 +1,18 @@
 /* eslint-disable prettier/prettier */
-import * as core from '@actions/core'
-import {Octokit} from '@octokit/rest'
+import {setFailed, getInput, debug} from '@actions/core'
+import { getOctokit ,context} from "@actions/github"
+
 
 async function run(): Promise<void> {
   try {
-    const pull_number: string = core.getInput('pull_number')
-    const owner: string = core.getInput('owner')
-    const repo: string = core.getInput('pull_number')
-    const token: string = core.getInput('token')
+    const pull_number: string = getInput('pull_number')
+    const owner: string = getInput('owner')
+    const repo: string = getInput('pull_number')
+    const token: string = getInput('token')
 
-    core.debug(`Checking labels for pull request number ${pull_number}`)
-    const octokit = new Octokit(
-    {
-      auth: token,
-    })
+    debug(`Context repo owner: ${context.repo.owner}`)
+    debug(`Checking labels for pull request number ${pull_number}`)
+    const octokit = getOctokit(token)
 
     const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
@@ -21,11 +20,11 @@ async function run(): Promise<void> {
       pull_number: Number(pull_number)
     })
 
-    core.debug(`Labels ${pull.data.labels}`)
+    debug(`Labels ${pull.data.labels}`)
 
 
   } catch (error) {
-    core.setFailed(error.message)
+    setFailed(error.message)
   }
 }
 
