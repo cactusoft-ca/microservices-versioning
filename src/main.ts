@@ -6,7 +6,7 @@ async function run(): Promise<void> {
   try {
     const pull_number = Number(core.getInput('pull_number'))
     const owner: string = core.getInput('owner')
-    const repo: string = core.getInput('repo')
+    const repo: string = core.getInput('pull_number')
     const myToken: string = core.getInput('token')
 
     core.debug(`Context repo owner: ${github.context.repo.owner}`)
