@@ -6,7 +6,7 @@ async function run(): Promise<void> {
   try {
     const pull_number: string = core.getInput('pull_number')
     const owner: string = core.getInput('owner')
-    const repo: string = core.getInput('pull_number')
+    const repo: string = core.getInput('repo')
     const token: string = core.getInput('token')
 
     core.debug(`Checking labels for pull request number ${pull_number}`)
