@@ -20,7 +20,7 @@ async function run(): Promise<void> {
       pull_number: Number(pull_number)
     })
 
-    debug(`Labels ${pull.data.labels}`)
+    debug(`Labels ${JSON.stringify(pull.data.labels)}`)
 
 
   } catch (error) {
