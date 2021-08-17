@@ -1,40 +1,29 @@
 /* eslint-disable prettier/prettier */
-import github from '@actions/github'
-import core from '@actions/core'
+import {setFailed, getInput, debug} from '@actions/core'
+import {context, getOctokit} from '@actions/github'
 
 async function run(): Promise<void> {
   try {
-    const pull_number = Number(core.getInput('pull_number'))
-    const owner: string = core.getInput('owner')
-    const repo: string = core.getInput('pull_number')
-    const myToken: string = core.getInput('token')
+    const pull_number: string = getInput('pull_number')
+    const owner: string = getInput('owner')
+    const repo: string = getInput('pull_number')
+    const token: string = getInput('token')
 
-    core.debug(`Context repo owner: ${github.context.repo.owner}`)
-    core.debug(`Checking labels for pull request number ${pull_number}`)
-    // This should be a token with access to your repository scoped in as a secret.
-    // The YML workflow will need to set myToken with the GitHub Secret Token
-    // myToken: ${{ secrets.GITHUB_TOKEN }}
-    // https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#about-the-github_token-secret
+    debug(`Context repo owner: ${context.repo.owner}`)
+    debug(`Checking labels for pull request number ${pull_number}`)
 
-    const octokit = github.getOctokit(myToken)
+    const octokit = getOctokit(token)
 
-    // You can also pass in additional options as a second parameter to getOctokit
-    // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
 
-    const { data: pullRequest } = await octokit.rest.pulls.get({
+    const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
       repo,
-      pull_number,
-      mediaType: {
-        format: 'diff'
-      }
+      pull_number: Number(pull_number)
     })
 
-    core.debug(JSON.stringify(pullRequest))
-
-    // debug(`Labels ${pull.data.labels}`)
+    debug(`Labels ${pull.data.labels}`)
   } catch (error) {
-    core.setFailed(error.message)
+    setFailed(error.message)
   }
 }
 

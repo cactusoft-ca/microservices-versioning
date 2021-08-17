@@ -15,42 +15,29 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 /* eslint-disable prettier/prettier */
-const github_1 = __importDefault(__nccwpck_require__(438));
-const core_1 = __importDefault(__nccwpck_require__(186));
+const core_1 = __nccwpck_require__(186);
+const github_1 = __nccwpck_require__(438);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const pull_number = Number(core_1.default.getInput('pull_number'));
-            const owner = core_1.default.getInput('owner');
-            const repo = core_1.default.getInput('pull_number');
-            const myToken = core_1.default.getInput('token');
-            core_1.default.debug(`Context repo owner: ${github_1.default.context.repo.owner}`);
-            core_1.default.debug(`Checking labels for pull request number ${pull_number}`);
-            // This should be a token with access to your repository scoped in as a secret.
-            // The YML workflow will need to set myToken with the GitHub Secret Token
-            // myToken: ${{ secrets.GITHUB_TOKEN }}
-            // https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#about-the-github_token-secret
-            const octokit = github_1.default.getOctokit(myToken);
-            // You can also pass in additional options as a second parameter to getOctokit
-            // const octokit = github.getOctokit(myToken, {userAgent: "MyActionVersion1"});
-            const { data: pullRequest } = yield octokit.rest.pulls.get({
+            const pull_number = core_1.getInput('pull_number');
+            const owner = core_1.getInput('owner');
+            const repo = core_1.getInput('pull_number');
+            const token = core_1.getInput('token');
+            core_1.debug(`Context repo owner: ${github_1.context.repo.owner}`);
+            core_1.debug(`Checking labels for pull request number ${pull_number}`);
+            const octokit = github_1.getOctokit(token);
+            const pull = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
                 owner,
                 repo,
-                pull_number,
-                mediaType: {
-                    format: 'diff'
-                }
+                pull_number: Number(pull_number)
             });
-            core_1.default.debug(JSON.stringify(pullRequest));
-            // debug(`Labels ${pull.data.labels}`)
+            core_1.debug(`Labels ${pull.data.labels}`);
         }
         catch (error) {
-            core_1.default.setFailed(error.message);
+            core_1.setFailed(error.message);
         }
     });
 }
@@ -85,7 +72,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.issue = exports.issueCommand = void 0;
-const os = __importStar(__nccwpck_require__(365));
+const os = __importStar(__nccwpck_require__(87));
 const utils_1 = __nccwpck_require__(278);
 /**
  * Commands
@@ -196,7 +183,7 @@ exports.getState = exports.saveState = exports.group = exports.endGroup = export
 const command_1 = __nccwpck_require__(351);
 const file_command_1 = __nccwpck_require__(717);
 const utils_1 = __nccwpck_require__(278);
-const os = __importStar(__nccwpck_require__(365));
+const os = __importStar(__nccwpck_require__(87));
 const path = __importStar(__nccwpck_require__(622));
 /**
  * The code to exit an action
@@ -489,7 +476,7 @@ exports.issueCommand = void 0;
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__nccwpck_require__(747));
-const os = __importStar(__nccwpck_require__(365));
+const os = __importStar(__nccwpck_require__(87));
 const utils_1 = __nccwpck_require__(278);
 function issueCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
@@ -535,7 +522,7 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
-/***/ 87:
+/***/ 53:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -543,7 +530,7 @@ exports.toCommandValue = toCommandValue;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Context = void 0;
 const fs_1 = __nccwpck_require__(747);
-const os_1 = __nccwpck_require__(365);
+const os_1 = __nccwpck_require__(87);
 class Context {
     /**
      * Hydrate the context from the environment
@@ -622,7 +609,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getOctokit = exports.context = void 0;
-const Context = __importStar(__nccwpck_require__(87));
+const Context = __importStar(__nccwpck_require__(53));
 const utils_1 = __nccwpck_require__(30);
 exports.context = new Context.Context();
 /**
@@ -715,7 +702,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getOctokitOptions = exports.GitHub = exports.context = void 0;
-const Context = __importStar(__nccwpck_require__(87));
+const Context = __importStar(__nccwpck_require__(53));
 const Utils = __importStar(__nccwpck_require__(914));
 // octokit + plugins
 const core_1 = __nccwpck_require__(762);
@@ -6244,7 +6231,7 @@ module.exports = require("net");
 
 /***/ }),
 
-/***/ 365:
+/***/ 87:
 /***/ ((module) => {
 
 "use strict";
