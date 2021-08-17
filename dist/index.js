@@ -27,7 +27,7 @@ function run() {
         try {
             const pull_number = Number(core_1.default.getInput('pull_number'));
             const owner = core_1.default.getInput('owner');
-            const repo = core_1.default.getInput('pull_number');
+            const repo = core_1.default.getInput('repo');
             const myToken = core_1.default.getInput('token');
             core_1.default.debug(`Context repo owner: ${github_1.default.context.repo.owner}`);
             core_1.default.debug(`Checking labels for pull request number ${pull_number}`);
