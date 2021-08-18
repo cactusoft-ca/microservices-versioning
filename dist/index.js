@@ -34,7 +34,8 @@ function run() {
                 repo,
                 pull_number: Number(pull_number)
             });
-            core_1.debug(`Labels ${JSON.stringify(pull.data.labels)}`);
+            let result = pull.data.labels.map((a) => __awaiter(this, void 0, void 0, function* () { return a.name; }));
+            core_1.debug(`Labels ${JSON.stringify(result)}`);
         }
         catch (error) {
             core_1.setFailed(error.message);

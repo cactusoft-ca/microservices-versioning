@@ -20,7 +20,8 @@ async function run(): Promise<void> {
       pull_number: Number(pull_number)
     })
 
-    debug(`Labels ${JSON.stringify(pull.data.labels)}`)
+    let result = pull.data.labels.map(async a => a.name)
+    debug(`Labels ${JSON.stringify(result)}`)
 
 
   } catch (error) {
