@@ -1,7 +1,6 @@
-/* eslint-disable prettier/prettier */
-import {setFailed, getInput, debug} from '@actions/core'
+import { setFailed, getInput, debug } from '@actions/core'
 import { getOctokit ,context} from "@actions/github"
-
+import { from  } from "linq-to-typescript"
 
 async function run(): Promise<void> {
   try {
@@ -20,8 +19,25 @@ async function run(): Promise<void> {
       pull_number: Number(pull_number)
     })
 
-    let result = pull.data.labels.map(async a => a.name)
-    debug(`Labels ${JSON.stringify(result)}`)
+    const tags: string[] = pull.data.labels.map(a => a == null ? '' : a.name as string)
+
+    debug(`Labels ${JSON.stringify(tags)}`)
+
+    const version_priority = ['major', 'minor', 'patch']
+
+    const versions_by_service =  from(tags)?.groupBy(function(x: string){ return x?.split(':')[0]; })
+    .select(function(x){
+      return {
+        Service: x.key,
+        Version: JSON.stringify(x?.select(x => x?.split(':')[1]).toArray().sort(function(a, b) {
+            const aKey = version_priority.indexOf(a)
+            const bKey = version_priority.indexOf(b);
+            return aKey - bKey;
+          })[0])
+      };
+    }).toArray();
+
+    debug(JSON.stringify(versions_by_service));
 
 
   } catch (error) {
