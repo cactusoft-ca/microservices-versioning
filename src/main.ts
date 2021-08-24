@@ -24,6 +24,8 @@ async function getLatestTag(octo: any, service: string, owner: string, repo: str
 `);
 
   const result = repository.refs.edges[0].node.name;
+  debug(`Latest tag for service ${service}: ${result}`)
+
   return result as string
 }
 
@@ -73,7 +75,7 @@ async function run(): Promise<void> {
           .then((latest_tag) => {
             service.latest_version = latest_tag
           }).catch((error) => {
-            console.log('Error: ', error);
+            debug(error);
           })
       });
 

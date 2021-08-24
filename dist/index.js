@@ -40,6 +40,7 @@ function getLatestTag(octo, service, owner, repo, token) {
   }
 `);
         const result = repository.refs.edges[0].node.name;
+        core_1.debug(`Latest tag for service ${service}: ${result}`);
         return result;
     });
 }
@@ -84,7 +85,7 @@ function run() {
                     .then((latest_tag) => {
                     service.latest_version = latest_tag;
                 }).catch((error) => {
-                    console.log('Error: ', error);
+                    core_1.debug(error);
                 });
             });
             core_1.debug(JSON.stringify(versions_by_service));
