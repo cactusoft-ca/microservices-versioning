@@ -79,17 +79,21 @@ function run() {
                 core_1.debug('No service to bump');
                 return;
             }
+            var itemsProcessed = 0;
             versions_by_service.forEach(function (service) {
                 core_1.debug(`Getting actual version for ${service.service}`);
                 getLatestTag(octokit, service.service, owner, repo, token)
                     .then((latest_tag) => {
                     service.latest_version = latest_tag;
+                    itemsProcessed++;
+                    if (itemsProcessed === versions_by_service.length) {
+                        core_1.setOutput('versions_by_service', versions_by_service);
+                    }
                 }).catch((error) => {
                     core_1.debug(error);
                 });
             });
             core_1.debug(JSON.stringify(versions_by_service));
-            core_1.setOutput('versions_by_service', versions_by_service);
         }
         catch (error) {
             core_1.setFailed(error.message);

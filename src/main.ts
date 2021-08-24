@@ -69,11 +69,16 @@ async function run(): Promise<void> {
         return
       }
 
+      var itemsProcessed: number = 0
       versions_by_service.forEach(function (service) {
         debug(`Getting actual version for ${service.service}`)
         getLatestTag(octokit, service.service, owner, repo, token)
           .then((latest_tag) => {
             service.latest_version = latest_tag
+            itemsProcessed++
+            if(itemsProcessed === versions_by_service.length) {
+              setOutput('versions_by_service', versions_by_service)
+            }
           }).catch((error) => {
             debug(error);
           })
@@ -81,7 +86,6 @@ async function run(): Promise<void> {
 
     debug(JSON.stringify(versions_by_service));
 
-    setOutput('versions_by_service', versions_by_service)
   } catch (error) {
     setFailed(error.message)
   }
