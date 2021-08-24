@@ -19,8 +19,32 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const linq_to_typescript_1 = __nccwpck_require__(9657);
+const graphql_1 = __nccwpck_require__(8467);
+function getLatestTag(service, owner, repo, token) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const graphqlWithAuth = graphql_1.graphql.defaults({
+            headers: {
+                authorization: `token ${token}`,
+            },
+        });
+        const { repository } = yield graphqlWithAuth(`
+  {
+    repository(owner: "${owner}", name: "${repo}") {
+      refs(refPrefix: "refs/tags/", query: "${service}", orderBy: {field: TAG_COMMIT_DATE, direction: ASC}, last: 1) {
+        edges {
+          node {
+            name
+          }
+        }
+      }
+    }
+  }
+`);
+        const result = repository.refs.edges[0].node.name;
+        return result;
+    });
+}
 function run() {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const pull_number = core_1.getInput('pull_number');
@@ -36,19 +60,36 @@ function run() {
                 pull_number: Number(pull_number)
             });
             const tags = pull.data.labels.map(a => a == null ? '' : a.name);
-            core_1.debug(`Labels ${JSON.stringify(tags)}`);
             const version_priority = ['major', 'minor', 'patch'];
-            const versions_by_service = (_a = linq_to_typescript_1.from(tags)) === null || _a === void 0 ? void 0 : _a.groupBy(function (x) { return x === null || x === void 0 ? void 0 : x.split(':')[0]; }).select(function (x) {
+            const versioning_labels = tags.filter(x => version_priority.some(x.includes.bind(x)));
+            core_1.debug(`Versioning Labels ${JSON.stringify(versioning_labels)}`);
+            const versions_by_service = linq_to_typescript_1.from(versioning_labels).groupBy(function (x) { return x.split(':')[0]; })
+                .select(function (x) {
                 return {
-                    Service: x.key,
-                    Version: JSON.stringify(x === null || x === void 0 ? void 0 : x.select(x => x === null || x === void 0 ? void 0 : x.split(':')[1]).toArray().sort(function (a, b) {
+                    service: x.key,
+                    bump: JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
                         const aKey = version_priority.indexOf(a);
                         const bKey = version_priority.indexOf(b);
                         return aKey - bKey;
-                    })[0])
+                    })[0]),
+                    latest_version: null
                 };
             }).toArray();
+            if (versions_by_service.length === 0) {
+                core_1.debug('No service to bump');
+                return;
+            }
+            versions_by_service.forEach(function (service) {
+                core_1.debug(`Getting actual version for ${service}`);
+                getLatestTag(service.service, owner, repo, token)
+                    .then((latest_tag) => {
+                    service.latest_version = latest_tag;
+                }).catch((error) => {
+                    console.log('Error: ', error);
+                });
+            });
             core_1.debug(JSON.stringify(versions_by_service));
+            core_1.setOutput('versions_by_service', versions_by_service);
         }
         catch (error) {
             core_1.setFailed(error.message);
