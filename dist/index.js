@@ -19,15 +19,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const linq_to_typescript_1 = __nccwpck_require__(9657);
-const graphql_1 = __nccwpck_require__(8467);
-function getLatestTag(service, owner, repo, token) {
+function getLatestTag(octo, service, owner, repo, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        const graphqlWithAuth = graphql_1.graphql.defaults({
-            headers: {
-                authorization: `token ${token}`,
-            },
-        });
-        const { repository } = yield graphqlWithAuth(`
+        // const graphqlWithAuth = graphql.defaults({
+        //   headers: {
+        //     authorization: `token ${token}`,
+        //   },
+        // });
+        const { repository } = yield octo.graphql(`
   {
     repository(owner: "${owner}", name: "${repo}") {
       refs(refPrefix: "refs/tags/", query: "${service}", orderBy: {field: TAG_COMMIT_DATE, direction: ASC}, last: 1) {
@@ -80,8 +79,8 @@ function run() {
                 return;
             }
             versions_by_service.forEach(function (service) {
-                core_1.debug(`Getting actual version for ${service}`);
-                getLatestTag(service.service, owner, repo, token)
+                core_1.debug(`Getting actual version for ${service.service}`);
+                getLatestTag(octokit, service.service, owner, repo, token)
                     .then((latest_tag) => {
                     service.latest_version = latest_tag;
                 }).catch((error) => {

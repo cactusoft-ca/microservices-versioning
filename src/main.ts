@@ -1,16 +1,15 @@
 import { setFailed, getInput, debug, setOutput } from '@actions/core'
 import { getOctokit ,context} from "@actions/github"
 import { from  } from "linq-to-typescript"
-import { graphql } from "@octokit/graphql"
 
-async function getLatestTag(service: string, owner: string, repo: string, token: string) {
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token ${token}`,
-    },
-  });
+async function getLatestTag(octo: any, service: string, owner: string, repo: string, token: string) {
+  // const graphqlWithAuth = graphql.defaults({
+  //   headers: {
+  //     authorization: `token ${token}`,
+  //   },
+  // });
 
-  const { repository } = await graphqlWithAuth(`
+  const { repository } = await octo.graphql(`
   {
     repository(owner: "${owner}", name: "${repo}") {
       refs(refPrefix: "refs/tags/", query: "${service}", orderBy: {field: TAG_COMMIT_DATE, direction: ASC}, last: 1) {
@@ -38,7 +37,6 @@ async function run(): Promise<void> {
     debug(`Context repo owner: ${context.repo.owner}`)
     debug(`Checking labels for pull request number ${pull_number}`)
     const octokit = getOctokit(token)
-
     const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
       repo,
@@ -70,8 +68,8 @@ async function run(): Promise<void> {
       }
 
       versions_by_service.forEach(function (service) {
-        debug(`Getting actual version for ${service}`)
-        getLatestTag(service.service, owner, repo, token)
+        debug(`Getting actual version for ${service.service}`)
+        getLatestTag(octokit, service.service, owner, repo, token)
           .then((latest_tag) => {
             service.latest_version = latest_tag
           }).catch((error) => {
