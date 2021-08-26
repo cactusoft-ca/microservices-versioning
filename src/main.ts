@@ -36,7 +36,7 @@ async function run(): Promise<void> {
     const owner: string = getInput('owner')
     const repo: string = getInput('repo')
     const token: string = getInput('token')
-    debug(`Context:\n ${context}`)
+    debug(`Context:\n ${JSON.stringify(context)}`)
 
     debug(`Context repo owner: ${context.repo.owner}`)
     debug(`Checking labels for pull request number ${pull_number}`)

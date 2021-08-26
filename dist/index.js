@@ -52,7 +52,7 @@ function run() {
             const owner = core_1.getInput('owner');
             const repo = core_1.getInput('repo');
             const token = core_1.getInput('token');
-            core_1.debug(`Context:\n ${github_1.context}`);
+            core_1.debug(`Context:\n ${JSON.stringify(github_1.context)}`);
             core_1.debug(`Context repo owner: ${github_1.context.repo.owner}`);
             core_1.debug(`Checking labels for pull request number ${pull_number}`);
             const octokit = github_1.getOctokit(token);
