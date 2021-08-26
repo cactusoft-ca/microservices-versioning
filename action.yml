@@ -4,16 +4,24 @@ author: 'Mostefa Kamal Lala'
 inputs:
   pull_number:
     required: true
-    description: 'The pull request number'
+    description: 'The pull request number, if not provided will take the one from context'
   owner:
     required: true
-    description: 'Owner of pull request repo'
+    description: 'Owner of pull request repo, if not provided will take the one from context'
   repo:
     required: true
-    description: 'Repo name'
+    description: 'Repo name, if not provided will take the one from context'
   token:
     required: true
-    description: 'Github token'
+    description: 'Github token, if not provided will take the one from context'
+  services_path:
+    required: true
+    description: 'The path where each microservice is in repo for changing versions in files'
+    default: 'services'
+  custom_services_path:
+    required: false
+    description: 'A list of paths for microservices that are not in the common place in the repo'
+
 runs:
   using: 'node12'
   main: 'dist/index.js'
