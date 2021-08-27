@@ -194,7 +194,7 @@ function setServicePath(name: string, workingDirectory: string, servicePath: str
   }
 
   if (!existsSync(serviceRootPath)) {
-    throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}`);
+    throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
   }
 
   servicePaths.path = serviceRootPath;

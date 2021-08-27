@@ -186,7 +186,7 @@ function setServicePath(name, workingDirectory, servicePath, customServicePaths)
         serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name);
     }
     if (!fs_1.existsSync(serviceRootPath)) {
-        throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}`);
+        throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
     }
     servicePaths.path = serviceRootPath;
     core_1.debug(`Root folder for service ${name} has been set to ${serviceRootPath}`);
