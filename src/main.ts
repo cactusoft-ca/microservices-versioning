@@ -44,7 +44,7 @@ async function run(): Promise<void> {
     const customServicesPaths = getMultilineInput('custom_services_path').map(function (x: string): ServicePaths {
       return {
         name: x.split(',')[0],
-        path: x.split(':')[1],
+        path: x.split(',')[1],
         versionFiles: new Array<VersionFiles>()
       }
     })
@@ -194,8 +194,8 @@ function setServicePath(name: string, workingDirectory: string, servicePath: str
   if (customServicePathIndex === -1) {
     serviceRootPath = path.join(workingDirectory, servicePath, name)
   } else {
-    debug(`Setting custom path for service ${name} to ${serviceRootPath}`)
     serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path)
+    debug(`Setting custom path for service ${name} to ${serviceRootPath}`)
   }
 
   if (!existsSync(serviceRootPath)) {
