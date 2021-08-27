@@ -177,13 +177,15 @@ function getVersionFilesTypesAndPaths(serviceName, metadataFilePath) {
 function setServicePath(name, workingDirectory, servicePath, customServicePaths) {
     core_1.debug(`Setting service path for ${name}`);
     let servicePaths = new ServicePaths();
-    let customServicePathIndex = customServicePaths.map(function (x) { return x.name; }).indexOf(name);
+    const customeServiceNames = customServicePaths.map(function (x) { return x.name; });
+    const customServicePathIndex = customeServiceNames.indexOf(name);
+    core_1.debug(`Services with custom paths: ${customeServiceNames.join(',')}`);
     let serviceRootPath;
     if (customServicePathIndex === -1) {
-        serviceRootPath = path.join(workingDirectory, servicePath, name);
+        serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name);
     }
     else {
-        serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name);
+        serviceRootPath = path.join(workingDirectory, servicePath, name);
     }
     if (!fs_1.existsSync(serviceRootPath)) {
         throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);

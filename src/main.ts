@@ -185,12 +185,15 @@ function setServicePath(name: string, workingDirectory: string, servicePath: str
   debug(`Setting service path for ${name}`)
 
   let servicePaths: ServicePaths = new ServicePaths()
-  let customServicePathIndex = customServicePaths.map(function (x: ServicePaths) { return x.name; }).indexOf(name)
+  const customeServiceNames = customServicePaths.map(function (x: ServicePaths) { return x.name; })
+  const customServicePathIndex = customeServiceNames.indexOf(name)
+  debug(`Services with custom paths: ${customeServiceNames.join(',')}`)
+
   let serviceRootPath
   if (customServicePathIndex === -1) {
-    serviceRootPath = path.join(workingDirectory, servicePath, name)
-  } else {
     serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name)
+  } else {
+    serviceRootPath = path.join(workingDirectory, servicePath, name)
   }
 
   if (!existsSync(serviceRootPath)) {
