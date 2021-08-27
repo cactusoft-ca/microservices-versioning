@@ -163,13 +163,16 @@ function setHelmChartAppVersion(path, version) {
     });
 }
 function getVersionFilesTypesAndPaths(serviceName, metadataFilePath) {
+    let existingMetadata = true;
     fs_1.stat(metadataFilePath, (exists) => {
         if (exists != null && exists.code === 'ENOENT') {
             core_1.warning(`Versioning file metadata not found for ${serviceName}.
       Searched Path: ${metadataFilePath}, the service will be released without any version files changed`);
-            return null;
+            existingMetadata = false;
         }
     });
+    if (!existingMetadata)
+        return null;
     let versionFiles = new Array();
     const doc = YAML.load(fs_1.readFile(metadataFilePath, (err) => {
         if (err) {

@@ -170,14 +170,18 @@ function setHelmChartAppVersion(path: string, version: string) {
 }
 
 function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string) {
+  let existingMetadata = true;
   stat(metadataFilePath, (exists) => {
     if (exists != null && exists.code === 'ENOENT') {
       warning(`Versioning file metadata not found for ${serviceName}.
       Searched Path: ${metadataFilePath}, the service will be released without any version files changed`)
 
-      return null;
+      existingMetadata = false;
     }
   });
+
+  if(!existingMetadata)
+    return null;
 
   let versionFiles: VersionFiles[] = new Array<VersionFiles>()
 
