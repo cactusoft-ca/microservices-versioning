@@ -14,14 +14,16 @@ inputs:
   token:
     required: true
     description: 'Github token, if not provided will take the one from context'
+  working_directory:
+    required: true
+    description: 'The working directory of the repo'
   services_path:
     required: true
-    description: 'The path where each microservice is in repo for changing versions in files'
+    description: 'The relative path where each microservice is in repo for changing versions in files'
     default: 'services'
   custom_services_path:
     required: false
-    description: 'A list of paths for microservices that are not in the common place in the repo'
-
+    description: 'A list of comma separated relative path by microservice that are not in the common place in the repo. '
 runs:
   using: 'node12'
   main: 'dist/index.js'

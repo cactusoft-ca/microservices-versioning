@@ -16,12 +16,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ServicePaths = exports.VersionFiles = void 0;
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const linq_to_typescript_1 = __nccwpck_require__(9657);
 const semver_1 = __nccwpck_require__(2300);
 const path_1 = __nccwpck_require__(5622);
 const fs_1 = __nccwpck_require__(5747);
+const YAML = __nccwpck_require__(1917);
+let path = __nccwpck_require__(5622);
 function getLatestVersion(octo, service, owner, repo, token) {
     return __awaiter(this, void 0, void 0, function* () {
         const { repository } = yield octo.graphql(`
@@ -52,6 +55,15 @@ function run() {
             const owner = core_1.getInput('owner');
             const repo = core_1.getInput('repo');
             const token = core_1.getInput('token');
+            const workingDirectory = core_1.getInput('working_directory');
+            const servicesPath = core_1.getInput('services_path');
+            const customServicesPaths = core_1.getMultilineInput('custom_services_path').map(function (x) {
+                return {
+                    name: x.split(',')[0],
+                    path: x.split(':')[1],
+                    versionFiles: new Array()
+                };
+            });
             core_1.debug(`Context:\n ${JSON.stringify(github_1.context)}`);
             core_1.debug(`Context repo owner: ${github_1.context.repo.owner}`);
             core_1.debug(`Checking labels for pull request number ${pull_number}`);
@@ -62,38 +74,39 @@ function run() {
                 pull_number: Number(pull_number)
             });
             const tags = pull.data.labels.map(a => a == null ? '' : a.name);
-            const version_priority = ['major', 'minor', 'patch'];
-            const versioning_labels = tags.filter(x => version_priority.some(x.includes.bind(x)));
-            core_1.debug(`Versioning Labels ${JSON.stringify(versioning_labels)}`);
-            const versions_by_service = linq_to_typescript_1.from(versioning_labels).groupBy(function (x) { return x.split(':')[0]; })
+            const versionPriorities = ['major', 'minor', 'patch'];
+            const bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
+            core_1.debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
+            const versionsByService = linq_to_typescript_1.from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
                 .select(function (x) {
                 return {
                     name: x.key,
-                    release_type: JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
-                        const aKey = version_priority.indexOf(a);
-                        const bKey = version_priority.indexOf(b);
+                    releaseType: JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
+                        const aKey = versionPriorities.indexOf(a);
+                        const bKey = versionPriorities.indexOf(b);
                         return aKey - bKey;
                     })[0]).replace(/['"]+/g, ''),
-                    current_version: null,
-                    next_version: null
+                    currentVersion: null,
+                    nextVersion: null,
+                    paths: setServicePath(x.key, workingDirectory, servicesPath, customServicesPaths)
                 };
             }).toArray();
-            if (versions_by_service.length === 0) {
+            if (versionsByService.length === 0) {
                 core_1.debug('No service to bump');
                 return;
             }
             let itemsProcessed = 0;
-            versions_by_service.forEach(function (service) {
+            versionsByService.forEach(function (service) {
                 core_1.debug(`Getting current version for ${service.name}`);
                 getLatestVersion(octokit, service.name, owner, repo, token)
                     .then((latest_version) => {
-                    service.current_version = latest_version;
-                    service.next_version = bump(latest_version, service.release_type);
-                    core_1.debug(`Bumped service ${service.name} version from ${latest_version} to ${service.next_version}`);
+                    service.currentVersion = latest_version;
+                    service.nextVersion = bump(latest_version, service.releaseType);
+                    core_1.debug(`Bumped service ${service.name} version from ${latest_version} to ${service.nextVersion}`);
                     editVersionFiles(service);
                     itemsProcessed++;
-                    if (itemsProcessed === versions_by_service.length) {
-                        core_1.setOutput('versions_by_service', versions_by_service);
+                    if (itemsProcessed === versionsByService.length) {
+                        core_1.setOutput('versions_by_service', versionsByService);
                     }
                 }).catch((error) => {
                     core_1.debug(error);
@@ -107,7 +120,6 @@ function run() {
 }
 run();
 function editVersionFiles(service) {
-    var path = __nccwpck_require__(5622);
     const filesTypesAndPathsToBumpPath = path_1.join(core_1.getInput('services_path'), service.name);
 }
 function setDotNetCoreBuildPropVersion(path, version) {
@@ -122,10 +134,8 @@ function setDotNetCoreBuildPropVersion(path, version) {
                 throw err;
             }
             result.Project.PropertyGroup[0].Version = version;
-            // convert JSON objec to XML
             const builder = new xml2js.Builder({ headless: true });
             const xml = builder.buildObject(result);
-            // write updated XML string to a file
             fs_1.writeFile(path, xml, { encoding: 'utf8', flag: 'w' }, (err) => {
                 if (err) {
                     throw err;
@@ -136,8 +146,7 @@ function setDotNetCoreBuildPropVersion(path, version) {
     });
 }
 function setHelmChartAppVersion(path, version) {
-    const YAML = __nccwpck_require__(1917);
-    var file = fs_1.readFile(path, "utf-8", (err, data) => {
+    let file = fs_1.readFile(path, "utf-8", (err) => {
         if (err) {
             core_1.warning(err);
             throw err;
@@ -153,6 +162,57 @@ function setHelmChartAppVersion(path, version) {
         });
     });
 }
+function getVersionFilesTypesAndPaths(serviceName, metadataFilePath) {
+    fs_1.stat(metadataFilePath, (exists) => {
+        if (exists != null && exists.code === 'ENOENT') {
+            core_1.warning(`Versioning file metadata not found for ${serviceName}.
+      Searched Path: ${metadataFilePath}, the service will be released without any version files changed`);
+            return null;
+        }
+    });
+    let versionFiles = new Array();
+    const doc = YAML.load(fs_1.readFile(metadataFilePath, (err) => {
+        if (err) {
+            core_1.warning(err);
+            throw err;
+        }
+        doc.versionFiles.forEach((element) => {
+            core_1.debug(`Versioning metadata for ${serviceName}: ${element.type} : ${element.path}`);
+            versionFiles.push(new VersionFiles(element.type, element.path));
+        });
+    }));
+    return versionFiles;
+}
+function setServicePath(name, workingDirectory, servicePath, customServicePaths) {
+    let servicePaths = new ServicePaths();
+    let customServicePathIndex = customServicePaths.map(function (x) { return x.name; }).indexOf(name);
+    let serviceRootPath;
+    if (customServicePathIndex === -1) {
+        serviceRootPath = path.join(workingDirectory, servicePath, name);
+    }
+    else {
+        serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name);
+    }
+    servicePaths.path = serviceRootPath;
+    core_1.debug(`Root folder for service ${name} has been set to ${serviceRootPath}`);
+    servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, path_1.join(serviceRootPath, 'versioning.yaml'));
+    return servicePaths;
+}
+class VersionFiles {
+    constructor(type = null, path = null) {
+        this.type = type;
+        this.path = path;
+    }
+}
+exports.VersionFiles = VersionFiles;
+class ServicePaths {
+    constructor(name = null, path = null, versionFiles = null) {
+        this.name = name;
+        this.path = path;
+        this.versionFiles = versionFiles;
+    }
+}
+exports.ServicePaths = ServicePaths;
 
 
 /***/ }),
