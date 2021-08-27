@@ -138,8 +138,8 @@ function setDotNetCoreBuildPropVersion(path, version, serviceName) {
             core_1.debug(`Service ${serviceName}: Updated .Net Core BuildPropVersion. Path: ${path} with ${xml}`);
         });
     }
-    catch (error) {
-        core_1.error(`An error occured trying to update helm chart for service ${serviceName}`);
+    catch (err) {
+        throw new Error(`An error occured trying to update helm chart for service ${serviceName} - err: ${err}`);
     }
 }
 function setHelmChartAppVersion(path, version, serviceName) {
@@ -151,7 +151,7 @@ function setHelmChartAppVersion(path, version, serviceName) {
         core_1.debug(`Service ${serviceName}: Updated Helm Chart appVersion to ${version}. Path: ${path}`);
     }
     catch (err) {
-        core_1.error(`An error occured trying to update helm chart for service ${serviceName}`);
+        throw new Error(`An error occured trying to update helm chart for service ${serviceName} - err: ${err}`);
     }
 }
 function getVersionFilesTypesAndPaths(serviceName, metadataFilePath) {
@@ -186,7 +186,7 @@ function setServicePath(name, workingDirectory, servicePath, customServicePaths)
         serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name);
     }
     if (!fs_1.existsSync(serviceRootPath)) {
-        core_1.error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}`);
+        throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}`);
     }
     servicePaths.path = serviceRootPath;
     core_1.debug(`Root folder for service ${name} has been set to ${serviceRootPath}`);

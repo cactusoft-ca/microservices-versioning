@@ -1,10 +1,9 @@
-import { setFailed, getInput, getMultilineInput, debug, setOutput, warning, error as actionError } from '@actions/core'
+import { setFailed, getInput, getMultilineInput, debug, setOutput, warning } from '@actions/core'
 import { getOctokit, context } from "@actions/github"
 import { from } from "linq-to-typescript"
 import { inc, ReleaseType } from 'semver';
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { version } from 'prettier';
 const YAML = require('js-yaml')
 const path = require('path');
 const xml2js = require('xml2js')
@@ -137,8 +136,8 @@ function setDotNetCoreBuildPropVersion(path: string, version: string, serviceNam
 
       debug(`Service ${serviceName}: Updated .Net Core BuildPropVersion. Path: ${path} with ${xml}`);
     });
-  } catch (error) {
-    actionError(`An error occured trying to update helm chart for service ${serviceName}`);
+  } catch (err) {
+    throw new Error(`An error occured trying to update helm chart for service ${serviceName} - err: ${err}`);
   }
 }
 
@@ -153,7 +152,7 @@ function setHelmChartAppVersion(path: string, version: string, serviceName: stri
     debug(`Service ${serviceName}: Updated Helm Chart appVersion to ${version}. Path: ${path}`);
 
   } catch (err) {
-    actionError(`An error occured trying to update helm chart for service ${serviceName}`);
+    throw new Error(`An error occured trying to update helm chart for service ${serviceName} - err: ${err}`);
   }
 }
 
@@ -195,7 +194,7 @@ function setServicePath(name: string, workingDirectory: string, servicePath: str
   }
 
   if (!existsSync(serviceRootPath)) {
-    actionError(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}`);
+    throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}`);
   }
 
   servicePaths.path = serviceRootPath;
