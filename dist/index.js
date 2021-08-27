@@ -65,7 +65,8 @@ function run() {
                     versionFiles: new Array()
                 };
             });
-            core_1.debug(`Context:\n ${JSON.stringify(github_1.context)}`);
+            core_1.debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
+            // debug(`Context:\n ${JSON.stringify(context)}`)
             core_1.debug(`Context repo owner: ${github_1.context.repo.owner}`);
             core_1.debug(`Checking labels for pull request number ${pull_number}`);
             const octokit = github_1.getOctokit(token);

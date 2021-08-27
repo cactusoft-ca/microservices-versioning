@@ -49,7 +49,9 @@ async function run(): Promise<void> {
       }
     })
 
-    debug(`Context:\n ${JSON.stringify(context)}`)
+    debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`)
+
+    // debug(`Context:\n ${JSON.stringify(context)}`)
 
     debug(`Context repo owner: ${context.repo.owner}`)
     debug(`Checking labels for pull request number ${pull_number}`)
