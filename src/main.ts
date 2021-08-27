@@ -193,7 +193,7 @@ function setServicePath(name: string, workingDirectory: string, servicePath: str
     serviceRootPath = path.join(workingDirectory, servicePath, name)
   } else {
     debug(`Setting custom path for service ${name} to ${serviceRootPath}`)
-    serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name)
+    serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path)
   }
 
   if (!existsSync(serviceRootPath)) {
