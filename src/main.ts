@@ -1,12 +1,13 @@
-import { setFailed, getInput, getMultilineInput, debug, setOutput, warning } from '@actions/core'
+import { setFailed, getInput, getMultilineInput, debug, setOutput, warning, error as actionError } from '@actions/core'
 import { getOctokit, context } from "@actions/github"
 import { from } from "linq-to-typescript"
 import { inc, ReleaseType } from 'semver';
 import { join } from 'path'
-import { readFile, writeFile, stat } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { version } from 'prettier';
 const YAML = require('js-yaml')
-let path = require('path');
+const path = require('path');
+const xml2js = require('xml2js')
 
 async function getLatestVersion(octo: any, service: string, owner: string, repo: string, token: string) {
   const { repository } = await octo.graphql(`
@@ -117,13 +118,9 @@ function editVersionFiles(service: ServiceSemVer) {
 
 }
 
-function setDotNetCoreBuildPropVersion(path: string, version: string) {
-  const xml2js = require('xml2js')
-
-  readFile(path, "utf-8", (err: any, data: any) => {
-    if (err) {
-      throw err;
-    }
+function setDotNetCoreBuildPropVersion(path: string, version: string, serviceName: string) {
+  try {
+    const data = readFileSync(path, { encoding: "utf8" })
 
     // convert XML data to JSON object
     xml2js.parseString(data, (err: any, result: { Project: { PropertyGroup: { Version: string; }[]; }; }) => {
@@ -136,67 +133,58 @@ function setDotNetCoreBuildPropVersion(path: string, version: string) {
       const builder = new xml2js.Builder({ headless: true });
       const xml = builder.buildObject(result);
 
-      writeFile(path, xml, { encoding: 'utf8', flag: 'w' }, (err: any) => {
-        if (err) {
-          throw err;
-        }
+      writeFileSync(path, xml)
 
-        debug(`Updated .Net Core BuildPropVersion. Path: ${path} with ${xml}`);
-      });
-
+      debug(`Service ${serviceName}: Updated .Net Core BuildPropVersion. Path: ${path} with ${xml}`);
     });
-  });
+  } catch (error) {
+    actionError(`An error occured trying to update helm chart for service ${serviceName}`);
+  }
 }
 
-function setHelmChartAppVersion(path: string, version: string) {
-
-  let file = readFile(path, "utf-8", (err: any) => {
-    if (err) {
-      warning(err);
-      throw err;
-    }
-    const doc = YAML.load(file);
+function setHelmChartAppVersion(path: string, version: string, serviceName: string) {
+  try {
+    const file = readFileSync(path, { encoding: "utf8" })
+    let doc = YAML.load(file);
 
     doc.appVersion = version;
-    const dump = YAML.dump(doc)
 
-    writeFile(path, dump, 'utf8', (err: any) => {
-      if (err) {
-        warning(err);
-        throw err
-      }
-    });
-  });
+    writeFileSync(path, YAML.dump(doc));
+    debug(`Service ${serviceName}: Updated Helm Chart appVersion to ${version}. Path: ${path}`);
+
+  } catch (err) {
+    actionError(`An error occured trying to update helm chart for service ${serviceName}`);
+  }
 }
 
 function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string) {
-  let existingMetadata = true;
-
   let versionFiles: VersionFiles[] = new Array<VersionFiles>()
 
-  const doc = YAML.load(readFile(metadataFilePath, (err: any) => {
-    if (err) {
-      warning(err);
-      if (err && err.code=='ENOENT') { warning(`Versioning file metadata not found for ${serviceName}.
-      Searched Path: ${metadataFilePath}, the service will be released without any version files changed`) }
-      existingMetadata = false;
-
-      return;
-    }
+  try {
+    const doc = YAML.load(readFileSync(metadataFilePath, { encoding: "utf8" }))
 
     doc.versionFiles.forEach((element: { type: any; path: any; }) => {
       debug(`Versioning metadata for ${serviceName}: ${element.type} : ${element.path}`)
       versionFiles.push(new VersionFiles(element.type, element.path))
     });
-  }));
+    return versionFiles
 
-  if(!existingMetadata)
+  } catch (err: any) {
+
+    if (err) {
+      if (err && err.code == 'ENOENT') {
+        warning(`Versioning file metadata not found for ${serviceName}.
+        Searched Path: ${metadataFilePath}, the service will be released without any version files changed \n ${err}`)
+      }
+    }
+
     return null;
-
-  return versionFiles
+  }
 }
 
 function setServicePath(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[]) {
+  debug(`Setting service path for ${name}`)
+
   let servicePaths: ServicePaths = new ServicePaths()
   let customServicePathIndex = customServicePaths.map(function (x: ServicePaths) { return x.name; }).indexOf(name)
   let serviceRootPath
@@ -206,7 +194,12 @@ function setServicePath(name: string, workingDirectory: string, servicePath: str
     serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path, name)
   }
 
+  if (!existsSync(serviceRootPath)) {
+    actionError(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}`);
+  }
+
   servicePaths.path = serviceRootPath;
+
   debug(`Root folder for service ${name} has been set to ${serviceRootPath}`)
 
   servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, join(serviceRootPath, 'versioning.yaml'))
