@@ -164,26 +164,23 @@ function setHelmChartAppVersion(path, version) {
 }
 function getVersionFilesTypesAndPaths(serviceName, metadataFilePath) {
     let existingMetadata = true;
-    fs_1.stat(metadataFilePath, (exists) => {
-        if (exists != null && exists.code === 'ENOENT') {
-            core_1.warning(`Versioning file metadata not found for ${serviceName}.
-      Searched Path: ${metadataFilePath}, the service will be released without any version files changed`);
-            existingMetadata = false;
-        }
-    });
-    if (!existingMetadata)
-        return null;
     let versionFiles = new Array();
     const doc = YAML.load(fs_1.readFile(metadataFilePath, (err) => {
         if (err) {
             core_1.warning(err);
-            throw err;
+            if (err && err.code == 'ENOENT') {
+                core_1.warning(`Versioning file metadata not found for ${serviceName}.
+      Searched Path: ${metadataFilePath}, the service will be released without any version files changed`);
+            }
+            existingMetadata = false;
         }
         doc.versionFiles.forEach((element) => {
             core_1.debug(`Versioning metadata for ${serviceName}: ${element.type} : ${element.path}`);
             versionFiles.push(new VersionFiles(element.type, element.path));
         });
     }));
+    if (!existingMetadata)
+        return null;
     return versionFiles;
 }
 function setServicePath(name, workingDirectory, servicePath, customServicePaths) {
