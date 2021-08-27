@@ -35,11 +35,11 @@ function bump(version: string, release_type: ReleaseType) {
 
 async function run(): Promise<void> {
   try {
-    const pull_number: string = getInput('pull_number')
-    const owner: string = getInput('owner')
-    const repo: string = getInput('repo')
-    const token: string = getInput('token')
-    const workingDirectory = getInput('working_directory')
+    const pull_number: string = getInput('pull_number', { required: true })
+    const owner: string = getInput('owner', { required: true })
+    const repo: string = getInput('repo', { required: true })
+    const token: string = getInput('token', { required: true })
+    const workingDirectory = getInput('working_directory', { required: true })
     const servicesPath = getInput('services_path')
     const customServicesPaths = getMultilineInput('custom_services_path').map(function (x: string): ServicePaths {
       return {
@@ -172,8 +172,6 @@ function setHelmChartAppVersion(path: string, version: string) {
 function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string) {
   let existingMetadata = true;
 
-
-
   let versionFiles: VersionFiles[] = new Array<VersionFiles>()
 
   const doc = YAML.load(readFile(metadataFilePath, (err: any) => {
@@ -182,6 +180,8 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
       if (err && err.code=='ENOENT') { warning(`Versioning file metadata not found for ${serviceName}.
       Searched Path: ${metadataFilePath}, the service will be released without any version files changed`) }
       existingMetadata = false;
+
+      return;
     }
 
     doc.versionFiles.forEach((element: { type: any; path: any; }) => {

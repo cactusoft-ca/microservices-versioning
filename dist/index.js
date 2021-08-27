@@ -51,11 +51,11 @@ function bump(version, release_type) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const pull_number = core_1.getInput('pull_number');
-            const owner = core_1.getInput('owner');
-            const repo = core_1.getInput('repo');
-            const token = core_1.getInput('token');
-            const workingDirectory = core_1.getInput('working_directory');
+            const pull_number = core_1.getInput('pull_number', { required: true });
+            const owner = core_1.getInput('owner', { required: true });
+            const repo = core_1.getInput('repo', { required: true });
+            const token = core_1.getInput('token', { required: true });
+            const workingDirectory = core_1.getInput('working_directory', { required: true });
             const servicesPath = core_1.getInput('services_path');
             const customServicesPaths = core_1.getMultilineInput('custom_services_path').map(function (x) {
                 return {
@@ -173,6 +173,7 @@ function getVersionFilesTypesAndPaths(serviceName, metadataFilePath) {
       Searched Path: ${metadataFilePath}, the service will be released without any version files changed`);
             }
             existingMetadata = false;
+            return;
         }
         doc.versionFiles.forEach((element) => {
             core_1.debug(`Versioning metadata for ${serviceName}: ${element.type} : ${element.path}`);
