@@ -330,6 +330,12 @@ class ServiceSemVer {
             const versionFiles = this.paths.versionFiles;
             if (versionFiles === null) {
                 core_1.warning(`No Version files to process for service "${this.name}"`);
+                const tagRes = yield git.createAnnotatedTag(this);
+                core_1.debug(JSON.stringify(tagRes));
+                const pushRes = yield git.pushAll(this);
+                core_1.debug(JSON.stringify(pushRes));
+                const createReleaseRes = yield git.createRelease(github_1.context.repo.owner, github_1.context.repo.repo, this.getNextVersionTag(), "a body", true);
+                core_1.debug(JSON.stringify(createReleaseRes));
                 return;
             }
             core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);

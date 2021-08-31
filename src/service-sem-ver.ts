@@ -48,6 +48,14 @@ export class ServiceSemVer {
     if (versionFiles === null) {
       warning(`No Version files to process for service "${this.name}"`)
 
+      const tagRes = await git.createAnnotatedTag(this)
+      debug(JSON.stringify(tagRes))
+
+      const pushRes = await git.pushAll(this)
+      debug(JSON.stringify(pushRes))
+
+      const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true)
+      debug(JSON.stringify(createReleaseRes))
       return;
     }
 
