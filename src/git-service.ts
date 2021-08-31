@@ -1,7 +1,6 @@
 import simpleGit, { CommitResult, PushResult, SimpleGit } from 'simple-git';
-import { debug } from '@actions/core'
+import { debug, setOutput, setFailed } from '@actions/core'
 import { ServiceSemVer } from './service-sem-ver';
-import core from '@actions/core';
 import { graphql } from "@octokit/graphql";
 import { getOctokit, context } from "@actions/github"
 
@@ -106,13 +105,13 @@ export class GitService {
             } = createReleaseResponse;
 
             // Set the output variables for use by other actions: https://github.com/actions/toolkit/tree/master/packages/core#inputsoutputs
-            core.setOutput('id', releaseId);
-            core.setOutput('html_url', htmlUrl);
-            core.setOutput('upload_url', uploadUrl);
+            setOutput('id', releaseId);
+            setOutput('html_url', htmlUrl);
+            setOutput('upload_url', uploadUrl);
 
             return createReleaseResponse;
         } catch (error) {
-            core.setFailed(error.message);
+            setFailed(error.message);
         }
     }
 }

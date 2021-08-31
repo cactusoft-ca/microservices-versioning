@@ -38,7 +38,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitService = void 0;
 const simple_git_1 = __importDefault(__nccwpck_require__(91477));
 const core_1 = __nccwpck_require__(42186);
-const core_2 = __importDefault(__nccwpck_require__(42186));
 const graphql_1 = __nccwpck_require__(88467);
 const github_1 = __nccwpck_require__(95438);
 class GitService {
@@ -126,13 +125,13 @@ class GitService {
                 // Get the ID, html_url, and upload URL for the created Release from the response
                 const { data: { id: releaseId, html_url: htmlUrl, upload_url: uploadUrl } } = createReleaseResponse;
                 // Set the output variables for use by other actions: https://github.com/actions/toolkit/tree/master/packages/core#inputsoutputs
-                core_2.default.setOutput('id', releaseId);
-                core_2.default.setOutput('html_url', htmlUrl);
-                core_2.default.setOutput('upload_url', uploadUrl);
+                core_1.setOutput('id', releaseId);
+                core_1.setOutput('html_url', htmlUrl);
+                core_1.setOutput('upload_url', uploadUrl);
                 return createReleaseResponse;
             }
             catch (error) {
-                core_2.default.setFailed(error.message);
+                core_1.setFailed(error.message);
             }
         });
     }
