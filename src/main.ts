@@ -1,37 +1,15 @@
 import { setFailed, getInput, getMultilineInput, debug, setOutput, warning } from '@actions/core'
 import { getOctokit, context } from "@actions/github"
-import { from } from "linq-to-typescript"
-import { inc, ReleaseType } from 'semver';
-import { join } from 'path'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-const YAML = require('js-yaml')
-const path = require('path');
-const xml2js = require('xml2js')
-
-async function getLatestVersion(octo: any, service: string, owner: string, repo: string, token: string) {
-  const { repository } = await octo.graphql(`
-  {
-    repository(owner: "${owner}", name: "${repo}") {
-      refs(refPrefix: "refs/tags/", query: "${service}", orderBy: {field: TAG_COMMIT_DATE, direction: ASC}, last: 1) {
-        edges {
-          node {
-            name
-          }
-        }
-      }
-    }
-  }
-`);
-
-  const result = repository.refs.edges[0].node.name.replace(`${service}/v`, '');
-  debug(`Latest tag for service ${service}: ${result}`)
-
-  return result as string
-}
-
-function bump(version: string, release_type: ReleaseType) {
-  return inc(version, release_type)
-}
+import { from } from "linq-to-typescript";
+import { ReleaseType } from 'semver';
+import { readFileSync, existsSync } from 'fs';
+import { load } from 'js-yaml';
+import { join } from 'path';
+import { ServicePaths } from "./service-paths";
+import { VersionFiles } from "./version-files";
+import { ServiceSemVer } from "./service-sem-ver";
+import { GitService } from "./git-service";
+import { VersionFileType } from './enums';
 
 async function run(): Promise<void> {
   try {
@@ -42,19 +20,15 @@ async function run(): Promise<void> {
     const workingDirectory = getInput('working_directory', { required: true })
     const servicesPath = getInput('services_path')
     const customServicesPaths = getMultilineInput('custom_services_path').map(function (x: string): ServicePaths {
-      return {
-        name: x.split(',')[0],
-        path: x.split(',')[1],
-        versionFiles: new Array<VersionFiles>()
-      }
+      return new ServicePaths(x.split(',')[0], x.split(',')[1])
     })
 
+    const git = new GitService(workingDirectory, token)
+
     debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`)
-
-    // debug(`Context:\n ${JSON.stringify(context)}`)
-
     debug(`Context repo owner: ${context.repo.owner}`)
     debug(`Checking labels for pull request number ${pull_number}`)
+
     const octokit = getOctokit(token)
     const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
@@ -70,17 +44,15 @@ async function run(): Promise<void> {
 
     const versionsByService: ServiceSemVer[] = from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
       .select(function (x) {
-        return {
-          name: x.key,
-          releaseType: JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
+        return new ServiceSemVer(
+          x.key,
+          JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
             const aKey = versionPriorities.indexOf(a)
             const bKey = versionPriorities.indexOf(b);
             return aKey - bKey;
           })[0]).replace(/['"]+/g, '') as ReleaseType,
-          currentVersion: null,
-          nextVersion: null,
-          paths: setServicePath(x.key, workingDirectory, servicesPath, customServicesPaths)
-        };
+          setServicePath(x.key, workingDirectory, servicesPath, customServicesPaths),
+          git);
       }).toArray();
 
     if (versionsByService.length === 0) {
@@ -88,25 +60,11 @@ async function run(): Promise<void> {
       return
     }
 
-    let itemsProcessed: number = 0
-    versionsByService.forEach(function (service) {
-      debug(`Getting current version for ${service.name}`)
-      getLatestVersion(octokit, service.name, owner, repo, token)
-        .then((latest_version: string) => {
-          service.currentVersion = latest_version
-          service.nextVersion = bump(latest_version, service.releaseType)
-          debug(`Bumped service ${service.name} version from ${latest_version} to ${service.nextVersion}`)
+    for (const service of versionsByService) {
+      const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
+      await service.setVersions(currentVersion, git)
+    }
 
-          editVersionFiles(service)
-
-          itemsProcessed++
-          if (itemsProcessed === versionsByService.length) {
-            setOutput('versions_by_service', versionsByService)
-          }
-        }).catch((error: any) => {
-          debug(error);
-        })
-    });
   } catch (error) {
     setFailed(error.message)
   }
@@ -114,60 +72,21 @@ async function run(): Promise<void> {
 
 run()
 
-function editVersionFiles(service: ServiceSemVer) {
-  const filesTypesAndPathsToBumpPath = join(getInput('services_path'), service.name)
-
-}
-
-function setDotNetCoreBuildPropVersion(path: string, version: string, serviceName: string) {
-  try {
-    const data = readFileSync(path, { encoding: "utf8" })
-
-    // convert XML data to JSON object
-    xml2js.parseString(data, (err: any, result: { Project: { PropertyGroup: { Version: string; }[]; }; }) => {
-      if (err) {
-        throw err;
-      }
-
-      result.Project.PropertyGroup[0].Version = version;
-
-      const builder = new xml2js.Builder({ headless: true });
-      const xml = builder.buildObject(result);
-
-      writeFileSync(path, xml)
-
-      debug(`Service ${serviceName}: Updated .Net Core BuildPropVersion. Path: ${path} with ${xml}`);
-    });
-  } catch (err) {
-    throw new Error(`An error occured trying to update helm chart for service ${serviceName} - err: ${err}`);
-  }
-}
-
-function setHelmChartAppVersion(path: string, version: string, serviceName: string) {
-  try {
-    const file = readFileSync(path, { encoding: "utf8" })
-    let doc = YAML.load(file);
-
-    doc.appVersion = version;
-
-    writeFileSync(path, YAML.dump(doc));
-    debug(`Service ${serviceName}: Updated Helm Chart appVersion to ${version}. Path: ${path}`);
-
-  } catch (err) {
-    throw new Error(`An error occured trying to update helm chart for service ${serviceName} - err: ${err}`);
-  }
-}
-
-function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string) {
-  let versionFiles: VersionFiles[] = new Array<VersionFiles>()
+function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string, workingDirectory: string) {
+  const versionFiles: VersionFiles[] = new Array<VersionFiles>()
 
   try {
-    const doc = YAML.load(readFileSync(metadataFilePath, { encoding: "utf8" }))
+    const doc = load(readFileSync(metadataFilePath, { encoding: "utf8" })) as { versionFiles?: { type: string, path: string }[] }
 
-    doc.versionFiles.forEach((element: { type: any; path: any; }) => {
-      debug(`Versioning metadata for ${serviceName}: ${element.type} : ${element.path}`)
-      versionFiles.push(new VersionFiles(element.type, element.path))
-    });
+    if (doc.versionFiles === null || doc.versionFiles === undefined) {
+      throw new Error();
+    }
+
+    for (const vFile of doc.versionFiles) {
+      debug(`Versioning metadata for ${serviceName}: ${vFile.type} : ${vFile.path}`)
+      versionFiles.push(new VersionFiles(vFile.type as unknown as VersionFileType, join(workingDirectory, vFile.path), vFile.path))
+    }
+
     return versionFiles
 
   } catch (err: any) {
@@ -186,15 +105,20 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
 function setServicePath(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[]) {
   debug(`Setting service path for ${name}`)
 
-  let servicePaths: ServicePaths = new ServicePaths()
+  const servicePaths = new ServicePaths()
   const customeServiceNames = customServicePaths.map(function (x: ServicePaths) { return x.name; })
   const customServicePathIndex = customeServiceNames.indexOf(name)
 
   let serviceRootPath
   if (customServicePathIndex === -1) {
-    serviceRootPath = path.join(workingDirectory, servicePath, name)
+    serviceRootPath = join(workingDirectory, servicePath, name)
   } else {
-    serviceRootPath = path.join(workingDirectory, customServicePaths[customServicePathIndex].path)
+
+    if (customServicePaths[customServicePathIndex].path === null) {
+      throw Error(`No custom path was found for service ${name}`)
+    }
+
+    serviceRootPath = join(workingDirectory, customServicePaths[customServicePathIndex].path as string)
     debug(`Setting custom path for service ${name} to ${serviceRootPath}`)
   }
 
@@ -206,37 +130,7 @@ function setServicePath(name: string, workingDirectory: string, servicePath: str
 
   debug(`Root folder for service ${name} has been set to ${serviceRootPath}`)
 
-  servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, join(serviceRootPath, 'versioning.yaml'))
+  servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, join(serviceRootPath, 'versioning.yaml'), workingDirectory)
 
   return servicePaths;
-}
-
-interface ServiceSemVer {
-  name: string;
-  releaseType: ReleaseType;
-  currentVersion: string | null;
-  nextVersion: string | null;
-  paths: ServicePaths;
-}
-
-export class VersionFiles {
-  type: string | null;
-  path: string | null;
-
-  constructor(type: string | null = null, path: string | null = null) {
-    this.type = type;
-    this.path = path;
-  }
-}
-
-export class ServicePaths {
-  name: string | null;
-  path: string | null;
-  versionFiles: VersionFiles[] | null;
-
-  constructor(name: string | null = null, path: string | null = null, versionFiles: VersionFiles[] | null = null) {
-    this.name = name;
-    this.path = path;
-    this.versionFiles = versionFiles;
-  }
 }
