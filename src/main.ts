@@ -84,7 +84,7 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
 
     for (const vFile of doc.versionFiles) {
       debug(`Versioning metadata for ${serviceName}: ${vFile.type} : ${vFile.path}`)
-      versionFiles.push(new VersionFiles(vFile.type as unknown as VersionFileType, join(workingDirectory, vFile.path), vFile.path))
+      versionFiles.push(new VersionFiles(vFile.type as VersionFileType, join(workingDirectory, vFile.path), vFile.path))
     }
 
     return versionFiles

@@ -1,7 +1,7 @@
 import { inc, ReleaseType } from 'semver';
 import { GitService } from './git-service';
 import { ServicePaths } from "./service-paths";
-import { debug } from '@actions/core'
+import { debug, warning } from '@actions/core'
 import { context } from "@actions/github"
 
 export class ServiceSemVer {
@@ -45,12 +45,14 @@ export class ServiceSemVer {
     this.currentVersion = currentVersion;
     const versionFiles = this.paths.versionFiles;
 
-    debug(`${versionFiles?.length} Version files to process for service "${this.name}"`)
-    debug(`${JSON.stringify(versionFiles)}`)
-
     if (versionFiles === null) {
+      warning(`No Version files to process for service "${this.name}"`)
+
       return;
     }
+
+    debug(`${versionFiles?.length} Version files to process for service "${this.name}"`)
+    debug(`${JSON.stringify(versionFiles)}`)
 
     for (const file of versionFiles) {
       debug(`Processing version file of type: ${file.type}`)
@@ -75,7 +77,7 @@ export class ServiceSemVer {
     const pushRes = await git.pushAll(this)
     debug(JSON.stringify(pushRes))
 
-    const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(),"a body", true)
+    const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true)
     debug(JSON.stringify(createReleaseRes))
   }
 }

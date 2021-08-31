@@ -10,8 +10,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.VersionFileType = void 0;
 var VersionFileType;
 (function (VersionFileType) {
-    VersionFileType[VersionFileType["DotNetCore"] = 0] = "DotNetCore";
-    VersionFileType[VersionFileType["Helm"] = 1] = "Helm";
+    VersionFileType["DotNetCore"] = "DotNetCore";
+    VersionFileType["Helm"] = "Helm";
 })(VersionFileType = exports.VersionFileType || (exports.VersionFileType = {}));
 
 
@@ -45,6 +45,7 @@ class GitService {
     constructor(repo, token) {
         core_1.debug(`Context repo owner from GitService: ${github_1.context.repo.owner}`);
         this.git = simple_git_1.default(repo, { binary: 'git' });
+        core_1.debug(`Is git repo: ${this.git.checkIsRepo()}`);
         this.token = token;
     }
     addFile(path) {
@@ -328,11 +329,12 @@ class ServiceSemVer {
         return __awaiter(this, void 0, void 0, function* () {
             this.currentVersion = currentVersion;
             const versionFiles = this.paths.versionFiles;
-            core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);
-            core_1.debug(`${JSON.stringify(versionFiles)}`);
             if (versionFiles === null) {
+                core_1.warning(`No Version files to process for service "${this.name}"`);
                 return;
             }
+            core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);
+            core_1.debug(`${JSON.stringify(versionFiles)}`);
             for (const file of versionFiles) {
                 core_1.debug(`Processing version file of type: ${file.type}`);
                 if (file.fullPath === null) {

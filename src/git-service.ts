@@ -13,6 +13,7 @@ export class GitService {
     constructor(repo: string, token: string) {
         debug(`Context repo owner from GitService: ${context.repo.owner}`)
         this.git = simpleGit(repo, { binary: 'git' });
+        debug(`Is git repo: ${this.git.checkIsRepo()}`)
         this.token = token;
     }
 
@@ -72,13 +73,14 @@ export class GitService {
         const result = repository.refs.edges[0].node.name.replace(`${serviceName}/v`, '');
         return result as string
     }
+
     public async createRelease(
         owner: string,
         repo: string,
         tag: string,
         body: string,
-        draft: boolean = true,
-        prerelease: boolean = true,
+        draft = true,
+        prerelease = true,
     ) {
         try {
             debug(`Creating release with tag ${tag} for ${owner}/${repo} `)

@@ -1,4 +1,4 @@
 export enum VersionFileType {
-  DotNetCore,
-  Helm
+  DotNetCore = 'DotNetCore',
+  Helm = 'Helm'
 }
