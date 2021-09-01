@@ -1,4 +1,4 @@
-import { setFailed, getInput, getMultilineInput, debug, error as actionError, setOutput, warning } from '@actions/core'
+import { setFailed, getInput, getMultilineInput, debug, error as actionError, setOutput, warning, error } from '@actions/core'
 import { getOctokit, context } from "@actions/github"
 import { from } from "linq-to-typescript";
 import { ReleaseType } from 'semver';
@@ -81,9 +81,15 @@ async function run(): Promise<void> {
         errors.push({ service: service.name,error: error.message });
       }
     }
+    debug(`errors: ${JSON.stringify(errors)}`)
+    debug(`Adding one error: ${JSON.stringify(errors)}`)
+
+    errors.push({ service: "server", error: "test"})
+    debug(`errors: ${JSON.stringify(errors)}`)
+    debug(`Services errors: ${JSON.stringify(errors.map(x => x.service))}`)
+    debug(`Distinctservices errors: ${JSON.stringify([...new Set(errors.map(x => x.service))])}`)
 
     const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
-    debug(`errors: ${JSON.stringify(errors)}`)
 
     debug(`versionsByService.length: ${versionsByService.length}`)
     debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`)

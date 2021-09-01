@@ -45,18 +45,14 @@ export class ServiceSemVer {
     try {
       this.currentVersion = currentVersion;
 
-      if (this.paths === null) {
-        return;
-      }
-
-      const versionFiles = this.paths.versionFiles;
-
-      if (versionFiles === null) {
+      if (this.paths === null || this.paths.versionFiles === null) {
         warning(`No Version files to process for service "${this.name}"`)
 
         await this.TagAndRelease(git);
         return;
       }
+
+      const versionFiles = this.paths.versionFiles;
 
       debug(`${versionFiles?.length} Version files to process for service "${this.name}"`)
       debug(`${JSON.stringify(versionFiles)}`)
