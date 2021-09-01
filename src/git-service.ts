@@ -1,5 +1,5 @@
 import simpleGit, { CommitResult, PushResult, SimpleGit } from 'simple-git';
-import { debug, setOutput, setFailed } from '@actions/core'
+import { debug, setOutput, setFailed, warning } from '@actions/core'
 import { ServiceSemVer } from './service-sem-ver';
 import { graphql } from "@octokit/graphql";
 import { getOctokit, context } from "@actions/github"
@@ -29,6 +29,7 @@ export class GitService {
             debug(`Commit result ${JSON.stringify(result, null, 2)}`)
             return result;
         } catch (error) {
+            warning(error)
             throw new Error(`An error occured while commiting: "${message}.\n ${error}`)
         }
 
@@ -41,6 +42,7 @@ export class GitService {
             debug(`Creating an annonated tag result ${JSON.stringify(result, null, 2)}`)
             return result;
         } catch (error) {
+            warning(error)
             throw new Error(`An error occured while creating a new tag for service: "${service.name}.\n ${error}`)
         }
     }

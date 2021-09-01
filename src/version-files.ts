@@ -65,7 +65,7 @@ export class VersionFiles {
 
       writeFileSync(this.fullPath, dump(doc));
 
-      debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${load(file)}`);
+      debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${JSON.stringify(load(file), null, 2)}`);
 
       await gitClient.addFile(this.relativePath)
 

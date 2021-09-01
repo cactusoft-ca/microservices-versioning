@@ -63,6 +63,7 @@ class GitService {
                 return result;
             }
             catch (error) {
+                core_1.warning(error);
                 throw new Error(`An error occured while commiting: "${message}.\n ${error}`);
             }
         });
@@ -76,6 +77,7 @@ class GitService {
                 return result;
             }
             catch (error) {
+                core_1.warning(error);
                 throw new Error(`An error occured while creating a new tag for service: "${service.name}.\n ${error}`);
             }
         });
@@ -483,7 +485,7 @@ class VersionFiles {
                 const nextVersion = service.getNextVersionTag();
                 doc.appVersion = nextVersion;
                 fs_1.writeFileSync(this.fullPath, js_yaml_1.dump(doc));
-                core_1.debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${js_yaml_1.load(file)}`);
+                core_1.debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${JSON.stringify(js_yaml_1.load(file), null, 2)}`);
                 yield gitClient.addFile(this.relativePath);
             }
             catch (err) {
