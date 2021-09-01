@@ -56,28 +56,43 @@ class GitService {
     }
     commit(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            core_1.debug(`Commiting ${message}`);
-            const result = yield this.git.commit(message);
-            core_1.debug(`Commit result ${JSON.stringify(result, null, 2)}`);
-            return result;
+            try {
+                core_1.debug(`Commiting ${message}`);
+                const result = yield this.git.commit(message);
+                core_1.debug(`Commit result ${JSON.stringify(result, null, 2)}`);
+                return result;
+            }
+            catch (error) {
+                throw new Error(`An error occured while commiting: "${message}.\n ${error}`);
+            }
         });
     }
     createAnnotatedTag(service) {
         return __awaiter(this, void 0, void 0, function* () {
-            core_1.debug(`Creating an annonated tag for service ${service.name}`);
-            const result = yield this.git.addAnnotatedTag(service.getNextVersionTag(), service.getNextVersionMessage());
-            core_1.debug(`Creating an annonated tag result ${JSON.stringify(result, null, 2)}`);
-            return result;
+            try {
+                core_1.debug(`Creating an annonated tag for service ${service.name}`);
+                const result = yield this.git.addAnnotatedTag(service.getNextVersionTag(), service.getNextVersionMessage());
+                core_1.debug(`Creating an annonated tag result ${JSON.stringify(result, null, 2)}`);
+                return result;
+            }
+            catch (error) {
+                throw new Error(`An error occured while creating a new tag for service: "${service.name}.\n ${error}`);
+            }
         });
     }
     pushAll(service) {
         return __awaiter(this, void 0, void 0, function* () {
-            core_1.debug(`Pushing all changes service ${service.name}`);
-            const pushRes = yield this.git.push();
-            core_1.debug(`Push result ${JSON.stringify(pushRes, null, 2)}`);
-            const tagPushRes = yield this.git.pushTags();
-            core_1.debug(`Tag push result ${JSON.stringify(tagPushRes, null, 2)}`);
-            return [pushRes, tagPushRes];
+            try {
+                core_1.debug(`Pushing all changes service ${service.name}`);
+                const pushRes = yield this.git.push();
+                core_1.debug(`Push result ${JSON.stringify(pushRes, null, 2)}`);
+                const tagPushRes = yield this.git.pushTags();
+                core_1.debug(`Tag push result ${JSON.stringify(tagPushRes, null, 2)}`);
+                return [pushRes, tagPushRes];
+            }
+            catch (error) {
+                throw new Error(`An error occured while pushing commits and new tag for service: "${service.name}.\n ${error}`);
+            }
         });
     }
     getLatestTagByServiceName(serviceName, owner, repo) {
@@ -447,11 +462,12 @@ class VersionFiles {
             try {
                 const data = fs_1.readFileSync(this.fullPath, { encoding: "utf8" });
                 const result = yield xml2js_1.parseStringPromise(data);
-                result.Project.PropertyGroup[0].Version = service.getNextVersionTag();
+                const nextVersion = service.getNextVersionTag();
+                result.Project.PropertyGroup[0].Version = nextVersion;
                 const builder = new xml2js_1.Builder({ headless: true });
                 const xml = builder.buildObject(result);
                 fs_1.writeFileSync(this.fullPath, xml);
-                core_1.debug(`Service "${service.name}": Updated .Net Core BuildPropVersion. Path: ${this.fullPath}.\n New Content:\n ${xml}`);
+                core_1.debug(`Service "${service.name}": Updated .Net Core BuildPropVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${xml}`);
                 yield gitClient.addFile(this.relativePath);
             }
             catch (err) {
@@ -464,9 +480,10 @@ class VersionFiles {
             try {
                 const file = fs_1.readFileSync(this.fullPath, { encoding: "utf8" });
                 const doc = js_yaml_1.load(file);
-                doc.appVersion = service.getNextVersionTag();
+                const nextVersion = service.getNextVersionTag();
+                doc.appVersion = nextVersion;
                 fs_1.writeFileSync(this.fullPath, js_yaml_1.dump(doc));
-                core_1.debug(`Service ${service.name}: Updated Helm Chart appVersion to ${service.getNextVersionTag}. Path: ${this.fullPath}`);
+                core_1.debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${js_yaml_1.load(file)}`);
                 yield gitClient.addFile(this.relativePath);
             }
             catch (err) {

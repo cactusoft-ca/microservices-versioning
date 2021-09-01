@@ -23,28 +23,40 @@ export class GitService {
     }
 
     public async commit(message: string): Promise<CommitResult> {
-        debug(`Commiting ${message}`)
-        const result = await this.git.commit(message)
-        debug(`Commit result ${JSON.stringify(result, null, 2)}`)
-        return result;
+        try {
+            debug(`Commiting ${message}`)
+            const result = await this.git.commit(message)
+            debug(`Commit result ${JSON.stringify(result, null, 2)}`)
+            return result;
+        } catch (error) {
+            throw new Error(`An error occured while commiting: "${message}.\n ${error}`)
+        }
+
     }
 
     public async createAnnotatedTag(service: ServiceSemVer): Promise<{ name: string }> {
-        debug(`Creating an annonated tag for service ${service.name}`)
-        const result = await this.git.addAnnotatedTag(service.getNextVersionTag(), service.getNextVersionMessage());
-        debug(`Creating an annonated tag result ${JSON.stringify(result, null, 2)}`)
-        return result;
+        try {
+            debug(`Creating an annonated tag for service ${service.name}`)
+            const result = await this.git.addAnnotatedTag(service.getNextVersionTag(), service.getNextVersionMessage());
+            debug(`Creating an annonated tag result ${JSON.stringify(result, null, 2)}`)
+            return result;
+        } catch (error) {
+            throw new Error(`An error occured while creating a new tag for service: "${service.name}.\n ${error}`)
+        }
     }
 
     public async pushAll(service: ServiceSemVer): Promise<PushResult[]> {
-        debug(`Pushing all changes service ${service.name}`)
-        const pushRes = await this.git.push();
-        debug(`Push result ${JSON.stringify(pushRes, null, 2)}`)
+        try {
+            debug(`Pushing all changes service ${service.name}`)
+            const pushRes = await this.git.push();
+            debug(`Push result ${JSON.stringify(pushRes, null, 2)}`)
 
-        const tagPushRes = await this.git.pushTags();
-        debug(`Tag push result ${JSON.stringify(tagPushRes, null, 2)}`)
-
-        return [pushRes, tagPushRes];
+            const tagPushRes = await this.git.pushTags();
+            debug(`Tag push result ${JSON.stringify(tagPushRes, null, 2)}`)
+            return [pushRes, tagPushRes];
+        } catch (error) {
+            throw new Error(`An error occured while pushing commits and new tag for service: "${service.name}.\n ${error}`)
+        }
     }
 
     public async getLatestTagByServiceName(serviceName: string, owner: string, repo: string) {

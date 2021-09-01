@@ -38,15 +38,16 @@ export class VersionFiles {
     try {
       const data = readFileSync(this.fullPath, { encoding: "utf8" })
       const result = await parseStringPromise(data);
+      const nextVersion = service.getNextVersionTag();
 
-      result.Project.PropertyGroup[0].Version = service.getNextVersionTag();
+      result.Project.PropertyGroup[0].Version = nextVersion;
 
       const builder = new Builder({ headless: true });
       const xml = builder.buildObject(result);
 
       writeFileSync(this.fullPath, xml)
 
-      debug(`Service "${service.name}": Updated .Net Core BuildPropVersion. Path: ${this.fullPath}.\n New Content:\n ${xml}`);
+      debug(`Service "${service.name}": Updated .Net Core BuildPropVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${xml}`);
 
       await gitClient.addFile(this.relativePath)
 
@@ -59,12 +60,12 @@ export class VersionFiles {
     try {
       const file = readFileSync(this.fullPath, { encoding: "utf8" })
       const doc = load(file) as { appVersion?: string };
-
-      doc.appVersion = service.getNextVersionTag();
+      const nextVersion = service.getNextVersionTag();
+      doc.appVersion = nextVersion;
 
       writeFileSync(this.fullPath, dump(doc));
 
-      debug(`Service ${service.name}: Updated Helm Chart appVersion to ${service.getNextVersionTag}. Path: ${this.fullPath}`);
+      debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${load(file)}`);
 
       await gitClient.addFile(this.relativePath)
 
