@@ -222,7 +222,7 @@ function run() {
                 }
             }
             const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
-            core_1.debug(`errors: ${JSON.stringify(errors, null, 2)}`);
+            core_1.debug(`errors: ${JSON.stringify(errors)}`);
             core_1.debug(`versionsByService.length: ${versionsByService.length}`);
             core_1.debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`);
             core_1.debug(`allFailed: ${allFailed}`);

@@ -80,7 +80,7 @@ async function run(): Promise<void> {
     }
 
     const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
-    debug(`errors: ${JSON.stringify(errors, null, 2)}`)
+    debug(`errors: ${JSON.stringify(errors)}`)
 
     debug(`versionsByService.length: ${versionsByService.length}`)
     debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`)
