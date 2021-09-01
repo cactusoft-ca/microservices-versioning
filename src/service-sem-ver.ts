@@ -1,7 +1,7 @@
 import { inc, ReleaseType } from 'semver';
 import { GitService } from './git-service';
 import { ServicePaths } from "./service-paths";
-import { debug, warning } from '@actions/core'
+import { debug, warning, error as actionError } from '@actions/core'
 import { context } from "@actions/github"
 
 export class ServiceSemVer {
@@ -80,7 +80,7 @@ export class ServiceSemVer {
 
       await this.TagAndRelease(git);
     } catch (error) {
-      error(error)
+      actionError(error)
       throw new Error(`An error occured while setting versions:\n ${error}`)
     }
   }

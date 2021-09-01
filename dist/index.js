@@ -400,7 +400,7 @@ class ServiceSemVer {
                 yield this.TagAndRelease(git);
             }
             catch (error) {
-                error(error);
+                core_1.error(error);
                 throw new Error(`An error occured while setting versions:\n ${error}`);
             }
         });
