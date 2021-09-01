@@ -81,6 +81,10 @@ async function run(): Promise<void> {
 
     const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
 
+    debug(`versionsByService.length: ${versionsByService.length}`)
+    debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`)
+    debug(`allFailed: ${allFailed}`)
+
     if(allFailed){
       throw new Error(JSON.stringify(errors))
     }
