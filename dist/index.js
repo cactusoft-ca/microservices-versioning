@@ -311,7 +311,7 @@ function setServicePaths(name, workingDirectory, servicePath, customServicePaths
     }
     catch (error) {
         core_1.error('SetServicePath ERROR: \n' + error);
-        throw error;
+        throw new Error(error);
     }
 }
 

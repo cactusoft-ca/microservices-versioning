@@ -169,7 +169,7 @@ function setServicePaths(name: string, workingDirectory: string, servicePath: st
     return servicePaths;
   } catch (error) {
     actionError('SetServicePath ERROR: \n' + error)
-    throw error
+    throw new Error(error)
   }
 
 }
