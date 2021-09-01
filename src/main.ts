@@ -81,22 +81,11 @@ async function run(): Promise<void> {
         errors.push({ service: service.name,error: error.message });
       }
     }
-    debug(`errors: ${JSON.stringify(errors)}`)
-    debug(`Adding one error: ${JSON.stringify(errors)}`)
 
-    errors.push({ service: "server", error: "test"})
-    debug(`errors: ${JSON.stringify(errors)}`)
-    debug(`Services errors: ${JSON.stringify(errors.map(x => x.service))}`)
-    debug(`Distinctservices errors: ${JSON.stringify([...new Set(errors.map(x => x.service))])}`)
-
-    const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
-
-    debug(`versionsByService.length: ${versionsByService.length}`)
-    debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`)
-    debug(`allFailed: ${allFailed}`)
+    const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
 
     if (allFailed) {
-      throw new Error(JSON.stringify(errors))
+      throw new Error(JSON.stringify(errors, null, 2))
     }
 
     if (errors.length > 0) {

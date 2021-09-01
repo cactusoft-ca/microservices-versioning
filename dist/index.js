@@ -242,18 +242,9 @@ function run() {
                     errors.push({ service: service.name, error: error.message });
                 }
             }
-            core_1.debug(`errors: ${JSON.stringify(errors)}`);
-            core_1.debug(`Adding one error: ${JSON.stringify(errors)}`);
-            errors.push({ service: "server", error: "test" });
-            core_1.debug(`errors: ${JSON.stringify(errors)}`);
-            core_1.debug(`Services errors: ${JSON.stringify(errors.map(x => x.service))}`);
-            core_1.debug(`Distinctservices errors: ${JSON.stringify([...new Set(errors.map(x => x.service))])}`);
-            const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
-            core_1.debug(`versionsByService.length: ${versionsByService.length}`);
-            core_1.debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`);
-            core_1.debug(`allFailed: ${allFailed}`);
+            const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
             if (allFailed) {
-                throw new Error(JSON.stringify(errors));
+                throw new Error(JSON.stringify(errors, null, 2));
             }
             if (errors.length > 0) {
                 for (const error of errors) {
