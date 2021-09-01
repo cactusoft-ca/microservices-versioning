@@ -44,20 +44,21 @@ class GitService {
     constructor(repo, token) {
         core_1.debug(`Context repo owner from GitService: ${github_1.context.repo.owner}`);
         this.git = simple_git_1.default(repo, { binary: 'git' });
-        core_1.debug(`Is git repo: ${this.git.checkIsRepo()}`);
+        core_1.debug(`Is git repo: ${JSON.stringify(this.git.checkIsRepo())}`);
         this.token = token;
     }
     addFile(path) {
         return __awaiter(this, void 0, void 0, function* () {
             const result = yield this.git.add(path);
-            console.log(result);
+            core_1.debug(result);
             return result;
         });
     }
     commit(message) {
         return __awaiter(this, void 0, void 0, function* () {
+            core_1.debug(`Commiting ${message}`);
             const result = yield this.git.commit(message);
-            console.log(result.commit);
+            core_1.debug(`Commit result ${JSON.stringify(result, null, 2)}`);
             return result;
         });
     }
@@ -65,7 +66,7 @@ class GitService {
         return __awaiter(this, void 0, void 0, function* () {
             core_1.debug(`Creating an annonated tag for service ${service.name}`);
             const result = yield this.git.addAnnotatedTag(service.getNextVersionTag(), service.getNextVersionMessage());
-            console.log(result.name);
+            core_1.debug(`Creating an annonated tag result ${JSON.stringify(result, null, 2)}`);
             return result;
         });
     }
@@ -73,15 +74,15 @@ class GitService {
         return __awaiter(this, void 0, void 0, function* () {
             core_1.debug(`Pushing all changes service ${service.name}`);
             const pushRes = yield this.git.push();
-            console.log(pushRes);
+            core_1.debug(`Push result ${JSON.stringify(pushRes, null, 2)}`);
             const tagPushRes = yield this.git.pushTags();
-            console.log(tagPushRes);
+            core_1.debug(`Tag push result ${JSON.stringify(tagPushRes, null, 2)}`);
             return [pushRes, tagPushRes];
         });
     }
     getLatestTagByServiceName(serviceName, owner, repo) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(`Getting current version for ${serviceName} from ${owner}/${repo}`);
+            core_1.debug(`GH GraphQL API - Getting current version for ${serviceName} from ${owner}/${repo}`);
             const graphqlWithAuth = graphql_1.graphql.defaults({
                 headers: {
                     authorization: `token ${this.token}`,
@@ -100,6 +101,7 @@ class GitService {
           }
         }
       `);
+            core_1.debug(`GH GraphQl result: \n ${JSON.stringify(repository)}`);
             const result = repository.refs.edges[0].node.name.replace(`${serviceName}/v`, '');
             return result;
         });
@@ -219,7 +221,7 @@ function run() {
                     yield service.setVersions(currentVersion, git);
                 }
                 catch (error) {
-                    core_1.debug(`setVersions Service: ${service} push errors: ${JSON.stringify(error)}`);
+                    core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`);
                     errors.push({ service: service.name, error });
                 }
             }
@@ -257,13 +259,13 @@ function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDire
         return versionFiles;
     }
     catch (err) {
-        if (err) {
-            if (err && err.code == 'ENOENT') {
-                core_1.warning(`Versioning file metadata not found for ${serviceName}.
+        if (err && err.code == 'ENOENT') {
+            throw new Error(`Versioning file metadata not found for ${serviceName}.
         Searched Path: ${metadataFilePath}, the service will be released without any version files changed \n ${err}`);
-            }
         }
-        return null;
+        else {
+            throw err;
+        }
     }
 }
 function setServicePaths(name, workingDirectory, servicePath, customServicePaths) {
@@ -426,6 +428,7 @@ class VersionFiles {
     }
     setVersion(service, gitClient) {
         return __awaiter(this, void 0, void 0, function* () {
+            core_1.debug(`Setting version in file of type: ${this.type} located at: ${this.fullPath} for service: ${service.name}`);
             switch (this.type) {
                 case enums_1.VersionFileType.DotNetCore:
                     yield this.setDotNetCoreBuildPropVersion(service, gitClient);

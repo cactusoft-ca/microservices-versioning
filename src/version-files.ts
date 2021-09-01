@@ -19,15 +19,14 @@ export class VersionFiles {
   }
 
   public async setVersion(service: ServiceSemVer, gitClient: GitService) {
+    debug(`Setting version in file of type: ${this.type} located at: ${this.fullPath} for service: ${service.name}`)
 
     switch (this.type) {
       case VersionFileType.DotNetCore:
         await this.setDotNetCoreBuildPropVersion(service, gitClient)
-
         break;
       case VersionFileType.Helm:
         await this.setHelmChartAppVersion(service, gitClient)
-
         break;
       default:
         warning(`No method found to modify version in file of type: ${this.type} located at: ${this.fullPath} for service: ${service.name}`)

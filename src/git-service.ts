@@ -12,42 +12,43 @@ export class GitService {
     constructor(repo: string, token: string) {
         debug(`Context repo owner from GitService: ${context.repo.owner}`)
         this.git = simpleGit(repo, { binary: 'git' });
-        debug(`Is git repo: ${this.git.checkIsRepo()}`)
+        debug(`Is git repo: ${JSON.stringify(this.git.checkIsRepo())}`)
         this.token = token;
     }
 
     public async addFile(path: string): Promise<string> {
         const result = await this.git.add(path);
-        console.log(result)
+        debug(result)
         return result;
     }
 
     public async commit(message: string): Promise<CommitResult> {
+        debug(`Commiting ${message}`)
         const result = await this.git.commit(message)
-        console.log(result.commit)
+        debug(`Commit result ${JSON.stringify(result, null, 2)}`)
         return result;
     }
 
     public async createAnnotatedTag(service: ServiceSemVer): Promise<{ name: string }> {
         debug(`Creating an annonated tag for service ${service.name}`)
         const result = await this.git.addAnnotatedTag(service.getNextVersionTag(), service.getNextVersionMessage());
-        console.log(result.name)
+        debug(`Creating an annonated tag result ${JSON.stringify(result, null, 2)}`)
         return result;
     }
 
     public async pushAll(service: ServiceSemVer): Promise<PushResult[]> {
         debug(`Pushing all changes service ${service.name}`)
         const pushRes = await this.git.push();
-        console.log(pushRes)
+        debug(`Push result ${JSON.stringify(pushRes, null, 2)}`)
 
         const tagPushRes = await this.git.pushTags();
-        console.log(tagPushRes)
+        debug(`Tag push result ${JSON.stringify(tagPushRes, null, 2)}`)
 
         return [pushRes, tagPushRes];
     }
 
     public async getLatestTagByServiceName(serviceName: string, owner: string, repo: string) {
-        console.log(`Getting current version for ${serviceName} from ${owner}/${repo}`)
+        debug(`GH GraphQL API - Getting current version for ${serviceName} from ${owner}/${repo}`)
 
         const graphqlWithAuth = graphql.defaults({
             headers: {
@@ -69,6 +70,7 @@ export class GitService {
         }
       `);
 
+        debug(`GH GraphQl result: \n ${JSON.stringify(repository)}`)
         const result = repository.refs.edges[0].node.name.replace(`${serviceName}/v`, '');
         return result as string
     }

@@ -42,11 +42,11 @@ async function run(): Promise<void> {
 
     debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
 
-    let errors = new Array<{service: string, error: string}>()
+    let errors = new Array<{ service: string, error: string }>()
 
     const versionsByService: ServiceSemVer[] = from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
       .select(function (x) {
-        let servicePaths : ServicePaths | null = null;
+        let servicePaths: ServicePaths | null = null;
 
         try {
           servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
@@ -77,8 +77,8 @@ async function run(): Promise<void> {
         const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
         await service.setVersions(currentVersion, git);
       } catch (error) {
-        debug(`setVersions Service: ${service} push errors: ${JSON.stringify(error)}`)
-        errors.push({ service: service.name, error});
+        debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
+        errors.push({ service: service.name, error });
       }
     }
 
@@ -89,11 +89,11 @@ async function run(): Promise<void> {
     debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`)
     debug(`allFailed: ${allFailed}`)
 
-    if(allFailed){
+    if (allFailed) {
       throw new Error(JSON.stringify(errors))
     }
 
-    if(errors.length > 0){
+    if (errors.length > 0) {
       for (const error of errors) {
         warning(`Service: "${error.service}" was not bumped.\n ${error.error} `)
       }
@@ -125,14 +125,13 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
 
   } catch (err: any) {
 
-    if (err) {
       if (err && err.code == 'ENOENT') {
-        warning(`Versioning file metadata not found for ${serviceName}.
+        throw new Error(`Versioning file metadata not found for ${serviceName}.
         Searched Path: ${metadataFilePath}, the service will be released without any version files changed \n ${err}`)
+      }else{
+        throw err;
       }
-    }
 
-    return null;
   }
 }
 
