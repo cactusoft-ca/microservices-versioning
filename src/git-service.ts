@@ -29,7 +29,6 @@ export class GitService {
             debug(`Commit result ${JSON.stringify(result, null, 2)}`)
             return result;
         } catch (error) {
-            warning(error)
             throw new Error(`An error occured while commiting: "${message}.\n ${error}`)
         }
 

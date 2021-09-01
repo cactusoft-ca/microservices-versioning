@@ -63,7 +63,6 @@ class GitService {
                 return result;
             }
             catch (error) {
-                core_1.warning(error);
                 throw new Error(`An error occured while commiting: "${message}.\n ${error}`);
             }
         });
@@ -373,31 +372,37 @@ class ServiceSemVer {
     }
     setVersions(currentVersion, git) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.currentVersion = currentVersion;
-            if (this.paths === null) {
-                return;
-            }
-            const versionFiles = this.paths.versionFiles;
-            if (versionFiles === null) {
-                core_1.warning(`No Version files to process for service "${this.name}"`);
+            try {
+                this.currentVersion = currentVersion;
+                if (this.paths === null) {
+                    return;
+                }
+                const versionFiles = this.paths.versionFiles;
+                if (versionFiles === null) {
+                    core_1.warning(`No Version files to process for service "${this.name}"`);
+                    yield this.TagAndRelease(git);
+                    return;
+                }
+                core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);
+                core_1.debug(`${JSON.stringify(versionFiles)}`);
+                for (const file of versionFiles) {
+                    core_1.debug(`Processing version file of type: ${file.type}`);
+                    if (file.fullPath === null) {
+                        throw new Error(`Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+                    }
+                    if (file.relativePath === null) {
+                        throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+                    }
+                    yield file.setVersion(this, git);
+                }
+                const commitRes = yield git.commit(this.getNextVersionMessage());
+                core_1.debug(JSON.stringify(commitRes));
                 yield this.TagAndRelease(git);
-                return;
             }
-            core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);
-            core_1.debug(`${JSON.stringify(versionFiles)}`);
-            for (const file of versionFiles) {
-                core_1.debug(`Processing version file of type: ${file.type}`);
-                if (file.fullPath === null) {
-                    throw new Error(`Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
-                }
-                if (file.relativePath === null) {
-                    throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
-                }
-                yield file.setVersion(this, git);
+            catch (error) {
+                core_1.warning(error);
+                throw error;
             }
-            const commitRes = yield git.commit(this.getNextVersionMessage());
-            core_1.debug(JSON.stringify(commitRes));
-            yield this.TagAndRelease(git);
         });
     }
     TagAndRelease(git) {

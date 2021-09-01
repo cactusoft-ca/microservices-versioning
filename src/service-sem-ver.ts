@@ -42,9 +42,10 @@ export class ServiceSemVer {
   }
 
   public async setVersions(currentVersion: string, git: GitService) {
-    this.currentVersion = currentVersion;
+    try {
+      this.currentVersion = currentVersion;
 
-    if(this.paths === null){
+    if (this.paths === null) {
       return;
     }
 
@@ -78,6 +79,10 @@ export class ServiceSemVer {
     debug(JSON.stringify(commitRes))
 
     await this.TagAndRelease(git);
+    } catch (error) {
+      warning(error)
+      throw error
+    }
   }
 
   private async TagAndRelease(git: GitService) {
