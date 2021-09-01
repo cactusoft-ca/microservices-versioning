@@ -45,43 +45,43 @@ export class ServiceSemVer {
     try {
       this.currentVersion = currentVersion;
 
-    if (this.paths === null) {
-      return;
-    }
+      if (this.paths === null) {
+        return;
+      }
 
-    const versionFiles = this.paths.versionFiles;
+      const versionFiles = this.paths.versionFiles;
 
-    if (versionFiles === null) {
-      warning(`No Version files to process for service "${this.name}"`)
+      if (versionFiles === null) {
+        warning(`No Version files to process for service "${this.name}"`)
+
+        await this.TagAndRelease(git);
+        return;
+      }
+
+      debug(`${versionFiles?.length} Version files to process for service "${this.name}"`)
+      debug(`${JSON.stringify(versionFiles)}`)
+
+      for (const file of versionFiles) {
+        debug(`Processing version file of type: ${file.type}`)
+
+        if (file.fullPath === null) {
+          throw new Error(`Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+        }
+
+        if (file.relativePath === null) {
+          throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+        }
+
+        await file.setVersion(this, git)
+      }
+
+      const commitRes = await git.commit(this.getNextVersionMessage())
+      debug(JSON.stringify(commitRes))
 
       await this.TagAndRelease(git);
-      return;
-    }
-
-    debug(`${versionFiles?.length} Version files to process for service "${this.name}"`)
-    debug(`${JSON.stringify(versionFiles)}`)
-
-    for (const file of versionFiles) {
-      debug(`Processing version file of type: ${file.type}`)
-
-      if (file.fullPath === null) {
-        throw new Error(`Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
-      }
-
-      if (file.relativePath === null) {
-        throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
-      }
-
-      await file.setVersion(this, git)
-    }
-
-    const commitRes = await git.commit(this.getNextVersionMessage())
-    debug(JSON.stringify(commitRes))
-
-    await this.TagAndRelease(git);
     } catch (error) {
-      warning(error)
-      throw error
+      error(error)
+      throw new Error(`An error occured while setting versions:\n ${error}`)
     }
   }
 
