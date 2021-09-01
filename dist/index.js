@@ -215,7 +215,6 @@ function run() {
                 .select(function (x) {
                 let servicePaths = null;
                 try {
-                    throw new Error('test hahahaha');
                     servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
                 }
                 catch (error) {
