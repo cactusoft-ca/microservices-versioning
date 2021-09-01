@@ -49,6 +49,7 @@ async function run(): Promise<void> {
         let servicePaths: ServicePaths | null = null;
 
         try {
+          throw new Error('test hahahaha')
           servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
         } catch (error) {
           debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error)}`)
