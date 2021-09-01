@@ -200,6 +200,7 @@ function run() {
                     servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
                 }
                 catch (error) {
+                    core_1.debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error)}`);
                     errors.push({ service: x.key, error });
                 }
                 return new service_sem_ver_1.ServiceSemVer(x.key, JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
@@ -218,6 +219,7 @@ function run() {
                     yield service.setVersions(currentVersion, git);
                 }
                 catch (error) {
+                    core_1.debug(`setVersions Service: ${service} push errors: ${JSON.stringify(error)}`);
                     errors.push({ service: service.name, error });
                 }
             }

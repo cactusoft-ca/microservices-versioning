@@ -51,6 +51,8 @@ async function run(): Promise<void> {
         try {
           servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
         } catch (error) {
+          debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error)}`)
+
           errors.push({ service: x.key, error });
         }
 
@@ -75,6 +77,7 @@ async function run(): Promise<void> {
         const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
         await service.setVersions(currentVersion, git);
       } catch (error) {
+        debug(`setVersions Service: ${service} push errors: ${JSON.stringify(error)}`)
         errors.push({ service: service.name, error});
       }
     }
