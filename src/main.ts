@@ -78,12 +78,10 @@ async function run(): Promise<void> {
         errors.push({ service: service.name, error });
       }) as string;
 
-      if (currentVersion.length > 0) {
-        await service.setVersions(currentVersion, git).catch(error => {
-          debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
-          errors.push({ service: service.name, error });
-        });
-      }
+      await service.setVersions(currentVersion, git).catch(error => {
+        debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
+        errors.push({ service: service.name, error });
+      });
 
     }
 

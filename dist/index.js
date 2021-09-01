@@ -236,12 +236,10 @@ function run() {
                     core_1.debug(`getLatestTagByServiceName Service: ${service.name} push errors: ${JSON.stringify(error)}`);
                     errors.push({ service: service.name, error });
                 });
-                if (currentVersion.length > 0) {
-                    yield service.setVersions(currentVersion, git).catch(error => {
-                        core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`);
-                        errors.push({ service: service.name, error });
-                    });
-                }
+                yield service.setVersions(currentVersion, git).catch(error => {
+                    core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`);
+                    errors.push({ service: service.name, error });
+                });
             }
             const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
             core_1.debug(`errors: ${JSON.stringify(errors)}`);
