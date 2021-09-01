@@ -1,4 +1,4 @@
-import { setFailed, getInput, getMultilineInput, debug, setOutput, warning } from '@actions/core'
+import { setFailed, getInput, getMultilineInput, debug, error as actionError, setOutput, warning } from '@actions/core'
 import { getOctokit, context } from "@actions/github"
 import { from } from "linq-to-typescript";
 import { ReleaseType } from 'semver';
@@ -73,16 +73,13 @@ async function run(): Promise<void> {
     }
 
     for (const service of versionsByService) {
-      const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo).catch(error => {
-        debug(`getLatestTagByServiceName Service: ${service.name} push errors: ${JSON.stringify(error)}`)
-        errors.push({ service: service.name, error });
-      }) as string;
-
-      await service.setVersions(currentVersion, git).catch(error => {
+      try {
+        const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
+        await service.setVersions(currentVersion, git);
+      } catch (error) {
         debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
         errors.push({ service: service.name, error });
-      });
-
+      }
     }
 
     const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
@@ -139,34 +136,40 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
 }
 
 function setServicePaths(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[]) {
-  debug(`Setting service path for ${name}`)
+  try {
+    debug(`Setting service path for ${name}`)
 
-  const servicePaths = new ServicePaths()
-  const customeServiceNames = customServicePaths.map(function (x: ServicePaths) { return x.name; })
-  const customServicePathIndex = customeServiceNames.indexOf(name)
+    const servicePaths = new ServicePaths()
+    const customeServiceNames = customServicePaths.map(function (x: ServicePaths) { return x.name; })
+    const customServicePathIndex = customeServiceNames.indexOf(name)
 
-  let serviceRootPath
-  if (customServicePathIndex === -1) {
-    serviceRootPath = join(workingDirectory, servicePath, name)
-  } else {
+    let serviceRootPath
+    if (customServicePathIndex === -1) {
+      serviceRootPath = join(workingDirectory, servicePath, name)
+    } else {
 
-    if (customServicePaths[customServicePathIndex].path === null) {
-      throw Error(`No custom path was found for service ${name}`)
+      if (customServicePaths[customServicePathIndex].path === null) {
+        throw Error(`No custom path was found for service ${name}`)
+      }
+
+      serviceRootPath = join(workingDirectory, customServicePaths[customServicePathIndex].path as string)
+      debug(`Setting custom path for service ${name} to ${serviceRootPath}`)
     }
 
-    serviceRootPath = join(workingDirectory, customServicePaths[customServicePathIndex].path as string)
-    debug(`Setting custom path for service ${name} to ${serviceRootPath}`)
+    if (!existsSync(serviceRootPath)) {
+      throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
+    }
+
+    servicePaths.path = serviceRootPath;
+
+    debug(`Root folder for service ${name} has been set to ${serviceRootPath}`)
+
+    servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, join(serviceRootPath, 'versioning.yaml'), workingDirectory)
+
+    return servicePaths;
+  } catch (error) {
+    actionError('SetServicePath ERROR: \n' + error)
+    throw error
   }
 
-  if (!existsSync(serviceRootPath)) {
-    throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
-  }
-
-  servicePaths.path = serviceRootPath;
-
-  debug(`Root folder for service ${name} has been set to ${serviceRootPath}`)
-
-  servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, join(serviceRootPath, 'versioning.yaml'), workingDirectory)
-
-  return servicePaths;
 }
