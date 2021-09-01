@@ -218,6 +218,7 @@ function run() {
                     servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
                 }
                 catch (error) {
+                    core_1.debug(`SetServicePaths ERROR: ${error}`);
                     core_1.debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error)}`);
                     errors.push({ service: x.key, error });
                 }
@@ -285,34 +286,28 @@ function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDire
     }
 }
 function setServicePaths(name, workingDirectory, servicePath, customServicePaths) {
-    try {
-        core_1.debug(`Setting service path for ${name}`);
-        const servicePaths = new service_paths_1.ServicePaths();
-        const customeServiceNames = customServicePaths.map(function (x) { return x.name; });
-        const customServicePathIndex = customeServiceNames.indexOf(name);
-        let serviceRootPath;
-        if (customServicePathIndex === -1) {
-            serviceRootPath = path_1.join(workingDirectory, servicePath, name);
-        }
-        else {
-            if (customServicePaths[customServicePathIndex].path === null) {
-                throw Error(`No custom path was found for service ${name}`);
-            }
-            serviceRootPath = path_1.join(workingDirectory, customServicePaths[customServicePathIndex].path);
-            core_1.debug(`Setting custom path for service ${name} to ${serviceRootPath}`);
-        }
-        if (!fs_1.existsSync(serviceRootPath)) {
-            throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
-        }
-        servicePaths.path = serviceRootPath;
-        core_1.debug(`Root folder for service ${name} has been set to ${serviceRootPath}`);
-        servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, path_1.join(serviceRootPath, 'versioning.yaml'), workingDirectory);
-        return servicePaths;
+    core_1.debug(`Setting service path for ${name}`);
+    const servicePaths = new service_paths_1.ServicePaths();
+    const customeServiceNames = customServicePaths.map(function (x) { return x.name; });
+    const customServicePathIndex = customeServiceNames.indexOf(name);
+    let serviceRootPath;
+    if (customServicePathIndex === -1) {
+        serviceRootPath = path_1.join(workingDirectory, servicePath, name);
     }
-    catch (error) {
-        core_1.error('SetServicePath ERROR: \n' + error);
-        throw new Error(error);
+    else {
+        if (customServicePaths[customServicePathIndex].path === null) {
+            throw Error(`No custom path was found for service ${name}`);
+        }
+        serviceRootPath = path_1.join(workingDirectory, customServicePaths[customServicePathIndex].path);
+        core_1.debug(`Setting custom path for service ${name} to ${serviceRootPath}`);
     }
+    if (!fs_1.existsSync(serviceRootPath)) {
+        throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
+    }
+    servicePaths.path = serviceRootPath;
+    core_1.debug(`Root folder for service ${name} has been set to ${serviceRootPath}`);
+    servicePaths.versionFiles = getVersionFilesTypesAndPaths(name, path_1.join(serviceRootPath, 'versioning.yaml'), workingDirectory);
+    return servicePaths;
 }
 
 
