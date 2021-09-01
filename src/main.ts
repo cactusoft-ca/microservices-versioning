@@ -13,21 +13,21 @@ import { VersionFileType } from './enums';
 
 async function run(): Promise<void> {
   try {
-    const pull_number: string = getInput('pull_number', { required: true })
-    const owner: string = getInput('owner', { required: true })
-    const repo: string = getInput('repo', { required: true })
-    const token: string = getInput('token', { required: true })
-    const workingDirectory = getInput('working_directory', { required: true })
-    const servicesPath = getInput('services_path')
+    const pull_number: string = getInput('pull_number', { required: true });
+    const owner: string = getInput('owner', { required: true });
+    const repo: string = getInput('repo', { required: true });
+    const token: string = getInput('token', { required: true });
+    const workingDirectory = getInput('working_directory', { required: true });
+    const servicesPath = getInput('services_path');
     const customServicesPaths = getMultilineInput('custom_services_path').map(function (x: string): ServicePaths {
-      return new ServicePaths(x.split(',')[0], x.split(',')[1])
-    })
+      return new ServicePaths(x.split(',')[0], x.split(',')[1]);
+    });
 
-    const git = new GitService(workingDirectory, token)
+    const git = new GitService(workingDirectory, token);
 
-    debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`)
-    debug(`Context repo owner: ${context.repo.owner}`)
-    debug(`Checking labels for pull request number ${pull_number}`)
+    debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
+    debug(`Context repo owner: ${context.repo.owner}`);
+    debug(`Checking labels for pull request number ${pull_number}`);
 
     const octokit = getOctokit(token)
     const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
@@ -36,14 +36,24 @@ async function run(): Promise<void> {
       pull_number: Number(pull_number)
     })
 
-    const tags: string[] = pull.data.labels.map(a => a == null ? '' : a.name as string)
-    const versionPriorities = ['major', 'minor', 'patch']
-    const bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)))
+    const tags: string[] = pull.data.labels.map(a => a == null ? '' : a.name as string);
+    const versionPriorities = ['major', 'minor', 'patch'];
+    const bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
 
-    debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`)
+    debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
+
+    let errors = new Array<{service: string, error: string}>()
 
     const versionsByService: ServiceSemVer[] = from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
       .select(function (x) {
+        let servicePaths : ServicePaths | null = null;
+
+        try {
+          servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
+        } catch (error) {
+          errors.push({ service: x.key, error });
+        }
+
         return new ServiceSemVer(
           x.key,
           JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
@@ -51,18 +61,34 @@ async function run(): Promise<void> {
             const bKey = versionPriorities.indexOf(b);
             return aKey - bKey;
           })[0]).replace(/['"]+/g, '') as ReleaseType,
-          setServicePath(x.key, workingDirectory, servicesPath, customServicesPaths),
+          servicePaths,
           git);
       }).toArray();
 
     if (versionsByService.length === 0) {
-      debug('No service to bump')
+      debug('No service to bump');
       return
     }
 
     for (const service of versionsByService) {
-      const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
-      await service.setVersions(currentVersion, git)
+      try {
+        const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
+        await service.setVersions(currentVersion, git);
+      } catch (error) {
+        errors.push({ service: service.name, error});
+      }
+    }
+
+    const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
+
+    if(allFailed){
+      throw new Error(JSON.stringify(errors))
+    }
+
+    if(errors.length > 0){
+      for (const error of errors) {
+        warning(`Service: "${error.service}" was not bumped.\n ${error.error} `)
+      }
     }
 
   } catch (error) {
@@ -102,7 +128,7 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
   }
 }
 
-function setServicePath(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[]) {
+function setServicePaths(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[]) {
   debug(`Setting service path for ${name}`)
 
   const servicePaths = new ServicePaths()

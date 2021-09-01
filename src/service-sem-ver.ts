@@ -7,14 +7,14 @@ import { context } from "@actions/github"
 export class ServiceSemVer {
   public name: string;
   public releaseType: ReleaseType;
-  public paths: ServicePaths;
+  public paths: ServicePaths | null;
   public currentVersion: string | undefined;
   public gitService: GitService;
 
   constructor(
     name: string,
     releaseType: ReleaseType,
-    paths: ServicePaths,
+    paths: ServicePaths | null,
     gitService: GitService
   ) {
     debug(`Context repo owner from GitService: ${context.repo.owner}`)
@@ -43,19 +43,17 @@ export class ServiceSemVer {
 
   public async setVersions(currentVersion: string, git: GitService) {
     this.currentVersion = currentVersion;
+
+    if(this.paths === null){
+      return;
+    }
+
     const versionFiles = this.paths.versionFiles;
 
     if (versionFiles === null) {
       warning(`No Version files to process for service "${this.name}"`)
 
-      const tagRes = await git.createAnnotatedTag(this)
-      debug(JSON.stringify(tagRes))
-
-      const pushRes = await git.pushAll(this)
-      debug(JSON.stringify(pushRes))
-
-      const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true)
-      debug(JSON.stringify(createReleaseRes))
+      await this.TagAndRelease(git);
       return;
     }
 
@@ -79,13 +77,17 @@ export class ServiceSemVer {
     const commitRes = await git.commit(this.getNextVersionMessage())
     debug(JSON.stringify(commitRes))
 
-    const tagRes = await git.createAnnotatedTag(this)
-    debug(JSON.stringify(tagRes))
+    await this.TagAndRelease(git);
+  }
 
-    const pushRes = await git.pushAll(this)
-    debug(JSON.stringify(pushRes))
+  private async TagAndRelease(git: GitService) {
+    const tagRes = await git.createAnnotatedTag(this);
+    debug(JSON.stringify(tagRes));
 
-    const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true)
-    debug(JSON.stringify(createReleaseRes))
+    const pushRes = await git.pushAll(this);
+    debug(JSON.stringify(pushRes));
+
+    const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true);
+    debug(JSON.stringify(createReleaseRes));
   }
 }

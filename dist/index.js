@@ -192,21 +192,43 @@ function run() {
             const versionPriorities = ['major', 'minor', 'patch'];
             const bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
             core_1.debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
+            let errors = new Array();
             const versionsByService = linq_to_typescript_1.from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
                 .select(function (x) {
+                let servicePaths = null;
+                try {
+                    servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
+                }
+                catch (error) {
+                    errors.push({ service: x.key, error });
+                }
                 return new service_sem_ver_1.ServiceSemVer(x.key, JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
                     const aKey = versionPriorities.indexOf(a);
                     const bKey = versionPriorities.indexOf(b);
                     return aKey - bKey;
-                })[0]).replace(/['"]+/g, ''), setServicePath(x.key, workingDirectory, servicesPath, customServicesPaths), git);
+                })[0]).replace(/['"]+/g, ''), servicePaths, git);
             }).toArray();
             if (versionsByService.length === 0) {
                 core_1.debug('No service to bump');
                 return;
             }
             for (const service of versionsByService) {
-                const currentVersion = yield git.getLatestTagByServiceName(service.name, owner, repo);
-                yield service.setVersions(currentVersion, git);
+                try {
+                    const currentVersion = yield git.getLatestTagByServiceName(service.name, owner, repo);
+                    yield service.setVersions(currentVersion, git);
+                }
+                catch (error) {
+                    errors.push({ service: service.name, error });
+                }
+            }
+            const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
+            if (allFailed) {
+                throw new Error(JSON.stringify(errors));
+            }
+            if (errors.length > 0) {
+                for (const error of errors) {
+                    core_1.warning(`Service: "${error.service}" was not bumped.\n ${error.error} `);
+                }
             }
         }
         catch (error) {
@@ -238,7 +260,7 @@ function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDire
         return null;
     }
 }
-function setServicePath(name, workingDirectory, servicePath, customServicePaths) {
+function setServicePaths(name, workingDirectory, servicePath, customServicePaths) {
     core_1.debug(`Setting service path for ${name}`);
     const servicePaths = new service_paths_1.ServicePaths();
     const customeServiceNames = customServicePaths.map(function (x) { return x.name; });
@@ -327,15 +349,13 @@ class ServiceSemVer {
     setVersions(currentVersion, git) {
         return __awaiter(this, void 0, void 0, function* () {
             this.currentVersion = currentVersion;
+            if (this.paths === null) {
+                return;
+            }
             const versionFiles = this.paths.versionFiles;
             if (versionFiles === null) {
                 core_1.warning(`No Version files to process for service "${this.name}"`);
-                const tagRes = yield git.createAnnotatedTag(this);
-                core_1.debug(JSON.stringify(tagRes));
-                const pushRes = yield git.pushAll(this);
-                core_1.debug(JSON.stringify(pushRes));
-                const createReleaseRes = yield git.createRelease(github_1.context.repo.owner, github_1.context.repo.repo, this.getNextVersionTag(), "a body", true);
-                core_1.debug(JSON.stringify(createReleaseRes));
+                yield this.TagAndRelease(git);
                 return;
             }
             core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);
@@ -352,6 +372,11 @@ class ServiceSemVer {
             }
             const commitRes = yield git.commit(this.getNextVersionMessage());
             core_1.debug(JSON.stringify(commitRes));
+            yield this.TagAndRelease(git);
+        });
+    }
+    TagAndRelease(git) {
+        return __awaiter(this, void 0, void 0, function* () {
             const tagRes = yield git.createAnnotatedTag(this);
             core_1.debug(JSON.stringify(tagRes));
             const pushRes = yield git.pushAll(this);
