@@ -219,8 +219,8 @@ function run() {
                 }
                 catch (error) {
                     core_1.debug(`SetServicePaths ERROR: ${error}`);
-                    core_1.debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error)}`);
-                    errors.push({ service: x.key, error });
+                    core_1.debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+                    errors.push({ service: x.key, error: error.message });
                 }
                 return new service_sem_ver_1.ServiceSemVer(x.key, JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
                     const aKey = versionPriorities.indexOf(a);
@@ -239,7 +239,7 @@ function run() {
                 }
                 catch (error) {
                     core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`);
-                    errors.push({ service: service.name, error });
+                    errors.push({ service: service.name, error: error.message });
                 }
             }
             const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;

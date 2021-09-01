@@ -52,8 +52,8 @@ async function run(): Promise<void> {
           servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
         } catch (error) {
           debug(`SetServicePaths ERROR: ${error}`)
-          debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error)}`)
-          errors.push({ service: x.key, error });
+          debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`)
+          errors.push({ service: x.key, error: error.message });
         }
 
         return new ServiceSemVer(
@@ -78,7 +78,7 @@ async function run(): Promise<void> {
         await service.setVersions(currentVersion, git);
       } catch (error) {
         debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
-        errors.push({ service: service.name, error });
+        errors.push({ service: service.name,error: error.message });
       }
     }
 
