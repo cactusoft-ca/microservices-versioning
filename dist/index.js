@@ -242,8 +242,13 @@ function run() {
                     errors.push({ service: service.name, error: error.message });
                 }
             }
-            const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
             core_1.debug(`errors: ${JSON.stringify(errors)}`);
+            core_1.debug(`Adding one error: ${JSON.stringify(errors)}`);
+            errors.push({ service: "server", error: "test" });
+            core_1.debug(`errors: ${JSON.stringify(errors)}`);
+            core_1.debug(`Services errors: ${JSON.stringify(errors.map(x => x.service))}`);
+            core_1.debug(`Distinctservices errors: ${JSON.stringify([...new Set(errors.map(x => x.service))])}`);
+            const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
             core_1.debug(`versionsByService.length: ${versionsByService.length}`);
             core_1.debug(`[...new Array(errors.map(x => x.service))].length: ${[...new Array(errors.map(x => x.service))].length}`);
             core_1.debug(`allFailed: ${allFailed}`);
@@ -375,15 +380,12 @@ class ServiceSemVer {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 this.currentVersion = currentVersion;
-                if (this.paths === null) {
-                    return;
-                }
-                const versionFiles = this.paths.versionFiles;
-                if (versionFiles === null) {
+                if (this.paths === null || this.paths.versionFiles === null) {
                     core_1.warning(`No Version files to process for service "${this.name}"`);
                     yield this.TagAndRelease(git);
                     return;
                 }
+                const versionFiles = this.paths.versionFiles;
                 core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);
                 core_1.debug(`${JSON.stringify(versionFiles)}`);
                 for (const file of versionFiles) {
