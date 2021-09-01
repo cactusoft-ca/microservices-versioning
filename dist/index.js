@@ -232,13 +232,15 @@ function run() {
                 return;
             }
             for (const service of versionsByService) {
-                try {
-                    const currentVersion = yield git.getLatestTagByServiceName(service.name, owner, repo);
-                    yield service.setVersions(currentVersion, git);
-                }
-                catch (error) {
-                    core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`);
+                const currentVersion = yield git.getLatestTagByServiceName(service.name, owner, repo).catch(error => {
+                    core_1.debug(`getLatestTagByServiceName Service: ${service.name} push errors: ${JSON.stringify(error)}`);
                     errors.push({ service: service.name, error });
+                });
+                if (currentVersion.length > 0) {
+                    yield service.setVersions(currentVersion, git).catch(error => {
+                        core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`);
+                        errors.push({ service: service.name, error });
+                    });
                 }
             }
             const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;

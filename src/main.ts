@@ -73,13 +73,18 @@ async function run(): Promise<void> {
     }
 
     for (const service of versionsByService) {
-      try {
-        const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
-        await service.setVersions(currentVersion, git);
-      } catch (error) {
-        debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
+      const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo).catch(error => {
+        debug(`getLatestTagByServiceName Service: ${service.name} push errors: ${JSON.stringify(error)}`)
         errors.push({ service: service.name, error });
+      }) as string;
+
+      if (currentVersion.length > 0) {
+        await service.setVersions(currentVersion, git).catch(error => {
+          debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
+          errors.push({ service: service.name, error });
+        });
       }
+
     }
 
     const allFailed = [...new Array(errors.map(x => x.service))].length === versionsByService.length;
@@ -125,12 +130,12 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
 
   } catch (err: any) {
 
-      if (err && err.code == 'ENOENT') {
-        throw new Error(`Versioning file metadata not found for ${serviceName}.
+    if (err && err.code == 'ENOENT') {
+      throw new Error(`Versioning file metadata not found for ${serviceName}.
         Searched Path: ${metadataFilePath}, the service will be released without any version files changed \n ${err}`)
-      }else{
-        throw err;
-      }
+    } else {
+      throw err;
+    }
 
   }
 }
