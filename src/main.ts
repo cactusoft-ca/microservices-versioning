@@ -142,6 +142,9 @@ function setOutputsAndAnnotations(errors: { service: string; error: string; }[],
 
   let results = new Array<{
     service: string,
+    releaseType: ReleaseType,
+    oldVersion: string | undefined,
+    newVersion: string | null,
     modifiedFiles: { type: VersionFileType, path: string }[],
     tagged: boolean,
     released: boolean
@@ -150,6 +153,9 @@ function setOutputsAndAnnotations(errors: { service: string; error: string; }[],
   for (const svc of versionsByService) {
     results.push({
       service: svc.name,
+      releaseType: svc.releaseType,
+      oldVersion: svc.currentVersion,
+      newVersion: svc.getBumpedVersion(),
       modifiedFiles: svc.modifedFiles,
       tagged: svc.tagged,
       released: svc.released

@@ -292,14 +292,15 @@ function setOutputsAndAnnotations(errors, versionsByService) {
     for (const svc of versionsByService) {
         results.push({
             service: svc.name,
+            releaseType: svc.releaseType,
+            oldVersion: svc.currentVersion,
+            newVersion: svc.getBumpedVersion(),
             modifiedFiles: svc.modifedFiles,
             tagged: svc.tagged,
             released: svc.released
         });
     }
-    if (results.length > 0) {
-        core_1.setOutput('results', JSON.stringify(results, null, 2));
-    }
+    core_1.setOutput('results', JSON.stringify(results, null, 2));
 }
 function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDirectory) {
     const versionFiles = new Array();
@@ -410,7 +411,13 @@ class ServiceSemVer {
         if (this.currentVersion === undefined) {
             throw new Error('Cannot provite a next version since current version is null');
         }
-        return `${this.name}/v${semver_1.inc(this.currentVersion, this.releaseType)}`;
+        return `${this.name}/v${this.getBumpedVersion()}`;
+    }
+    getBumpedVersion() {
+        if (this.currentVersion === undefined) {
+            throw new Error('Cannot provite a next version since current version is null');
+        }
+        return semver_1.inc(this.currentVersion, this.releaseType);
     }
     getNextVersionMessage() {
         if (this.currentVersion === undefined) {

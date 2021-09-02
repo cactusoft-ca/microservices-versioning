@@ -34,7 +34,16 @@ export class ServiceSemVer {
       throw new Error('Cannot provite a next version since current version is null')
     }
 
-    return `${this.name}/v${inc(this.currentVersion, this.releaseType)}`;
+    return `${this.name}/v${this.getBumpedVersion()}`;
+  }
+
+  public getBumpedVersion() {
+
+    if (this.currentVersion === undefined) {
+      throw new Error('Cannot provite a next version since current version is null')
+    }
+
+    return inc(this.currentVersion, this.releaseType);
   }
 
   public getNextVersionMessage(): string {
