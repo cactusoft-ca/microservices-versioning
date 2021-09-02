@@ -18,17 +18,22 @@ if an issue occurs, warning will be added to the run summary.
 
 It is important to checkout the master/main branch before and set the git config.
 
+For a manual run, providing service_name and release_type parameter is necessary.
+
 ```YAML
 name: Version Bumping
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version of tag without v"
+      release_type:
+        description: "Major, Minor or Patch"
         required: true
       service:
         description: "Service name"
+        required: true
+      service_path:
+        description: "The service path"
         required: true
   pull_request:
     types:
@@ -68,8 +73,22 @@ jobs:
           git config --global user.email "${{ secrets.AUTO_BUMP_MAIL }}"
           git config --global user.name "${{ secrets.AUTO_BUMP_NAME }}"
 
-      - name: Microservices verisoning action
+      - name: Autobumping
         if: steps.cache-workflow-run.outputs.cache-hit != 'true' && github.event_name != 'workflow_dispatch'
+        uses: cactusoft-ca/microservices-versioning@main
+        id: microservices_versioning
+        with:
+          pull_number: ${{ github.event.number }}
+          owner: cactusoft-ca
+          repo: microservices-versioning
+          token: ${{ secrets.GITHUB_TOKEN }}
+          working_directory: ${{ github.workspace }}
+          services_path: "services"
+          custom_services_path: |
+            service2,custom/service2/path
+
+      - name: Manual autobumping
+        if: steps.cache-workflow-run.outputs.cache-hit != 'true' && github.event_name == 'workflow_dispatch'
         uses: cactusoft-ca/microservices-versioning@main
         id: microservices_versioning
         with:

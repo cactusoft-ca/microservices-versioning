@@ -25,6 +25,7 @@ async function run(): Promise<void> {
     const serviceName = getInput('service_name');
     const releaseType = getInput('release_type');
     const git = new GitService(workingDirectory, token);
+    const uniqueService = serviceName !== "";
 
     debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
     debug(`Context repo owner: ${context.repo.owner}`);
@@ -35,7 +36,7 @@ async function run(): Promise<void> {
     let bumpLabels: string[]
     const versionPriorities = ['major', 'minor', 'patch'];
 
-    if (serviceName !== "") {
+    if (uniqueService) {
       if(releaseType === ""){
         throw new Error(`A release type must be provided in order to bump service: "${serviceName}"`)
       }
@@ -66,7 +67,7 @@ async function run(): Promise<void> {
         let servicePaths: ServicePaths | null = null;
 
         try {
-          servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
+          servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths, uniqueService);
         } catch (error) {
           debug(`SetServicePaths ERROR: ${error}`)
           debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`)
@@ -147,7 +148,7 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
   }
 }
 
-function setServicePaths(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[]) {
+function setServicePaths(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[], uniqueService : boolean) {
   debug(`Setting service path for ${name}`)
 
   const servicePaths = new ServicePaths()
@@ -156,7 +157,11 @@ function setServicePaths(name: string, workingDirectory: string, servicePath: st
 
   let serviceRootPath
   if (customServicePathIndex === -1) {
-    serviceRootPath = join(workingDirectory, servicePath, name)
+    if(uniqueService){
+      serviceRootPath = join(workingDirectory, servicePath)
+    }else{
+      serviceRootPath = join(workingDirectory, servicePath, name)
+    }
   } else {
 
     if (customServicePaths[customServicePathIndex].path === null) {

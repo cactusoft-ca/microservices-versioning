@@ -199,13 +199,14 @@ function run() {
             const serviceName = core_1.getInput('service_name');
             const releaseType = core_1.getInput('release_type');
             const git = new git_service_1.GitService(workingDirectory, token);
+            const uniqueService = serviceName !== "";
             core_1.debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
             core_1.debug(`Context repo owner: ${github_1.context.repo.owner}`);
             core_1.debug(`Checking labels for pull request number ${pull_number}`);
             const octokit = github_1.getOctokit(token);
             let bumpLabels;
             const versionPriorities = ['major', 'minor', 'patch'];
-            if (serviceName !== "") {
+            if (uniqueService) {
                 if (releaseType === "") {
                     throw new Error(`A release type must be provided in order to bump service: "${serviceName}"`);
                 }
@@ -229,7 +230,7 @@ function run() {
                 .select(function (x) {
                 let servicePaths = null;
                 try {
-                    servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths);
+                    servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths, uniqueService);
                 }
                 catch (error) {
                     core_1.debug(`SetServicePaths ERROR: ${error}`);
@@ -295,14 +296,19 @@ function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDire
         }
     }
 }
-function setServicePaths(name, workingDirectory, servicePath, customServicePaths) {
+function setServicePaths(name, workingDirectory, servicePath, customServicePaths, uniqueService) {
     core_1.debug(`Setting service path for ${name}`);
     const servicePaths = new service_paths_1.ServicePaths();
     const customeServiceNames = customServicePaths.map(function (x) { return x.name; });
     const customServicePathIndex = customeServiceNames.indexOf(name);
     let serviceRootPath;
     if (customServicePathIndex === -1) {
-        serviceRootPath = path_1.join(workingDirectory, servicePath, name);
+        if (uniqueService) {
+            serviceRootPath = path_1.join(workingDirectory, servicePath);
+        }
+        else {
+            serviceRootPath = path_1.join(workingDirectory, servicePath, name);
+        }
     }
     else {
         if (customServicePaths[customServicePathIndex].path === null) {
