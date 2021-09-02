@@ -166,7 +166,7 @@ function setOutputsAndAnnotations(errors: { service: string; error: string; }[],
     })
   }
 
-  setOutput('results', JSON.stringify(results, null, 2))
+  setOutput('results', JSON.stringify(results))
 }
 
 function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string, workingDirectory: string) {

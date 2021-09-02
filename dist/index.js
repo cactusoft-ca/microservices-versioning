@@ -303,7 +303,7 @@ function setOutputsAndAnnotations(errors, versionsByService) {
             released: svc.released
         });
     }
-    core_1.setOutput('results', JSON.stringify(results, null, 2));
+    core_1.setOutput('results', JSON.stringify(results));
 }
 function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDirectory) {
     const versionFiles = new Array();
