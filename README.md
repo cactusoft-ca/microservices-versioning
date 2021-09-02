@@ -2,104 +2,94 @@
   <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
 </p>
 
-# Create a JavaScript Action using TypeScript
+# Microservices version auto bumping
 
-Use this template to bootstrap the creation of a TypeScript action.:rocket:
+This action helps to automatically bump version files, create tag and a release when a closed pull-request with specific labels containing the service name and the release type is found.
+The list of files that contain the version that need to be changed will updated in the future depending on usage requirement. At the moment, version files of Helm charts and .Net core projects are supported.
+However it is not necessary to change files to tag and create a release.
 
-This template includes compilation support, tests, a validation workflow, publishing, and versioning guidance.  
+More paramaters and outputs will be added in the future.
 
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
+## Usage
 
-## Create an action from this template
+This example workflow contains a condition on job level as said before for the workflow to run.
+In order to avoid multiple useless versions bumping a guard exist to run the workflow only once with the same context.
+if an issue occurs, warning will be added to the run summary.
 
-Click the `Use this Template` and provide the new repo details for your action
+It is important to checkout the master/main branch before and set the git config.
 
-## Code in Main
+```YAML
+name: Version Bumping
 
-> First, you'll need to have a reasonably modern version of `node` handy. This won't work with versions older than 9, for instance.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version of tag without v"
+        required: true
+      service:
+        description: "Service name"
+        required: true
+  pull_request:
+    types:
+      - closed
 
-Install the dependencies  
-```bash
-$ npm install
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+      (contains(toJson(github.event.pull_request.labels.*.name), ':patch') ||
+      contains(toJson(github.event.pull_request.labels.*.name), ':minor') ||
+      contains(toJson(github.event.pull_request.labels.*.name), ':major')))
+    concurrency: version-bumping
+    steps:
+      - name: Setting variables
+        run: |
+          echo "UNIQUE_FILE_NAME=${{ github.workflow }}-${{ github.run_id }}-${{ github.run_number }}" >> $GITHUB_ENV
+          echo "CACHE_PATH=${{ github.workspace }}/firstrun" >> $GITHUB_ENV
+
+      - name: Cache workflow run
+        id: cache-workflow-run
+        uses: actions/cache@v2
+        env:
+          cache-name: ${{ env.UNIQUE_FILE_NAME }}
+        with:
+          path: ${{ env.CACHE_PATH }}
+          key: ${{ runner.os }}-${{ env.cache-name }}
+
+      - name: "Checkout"
+        if: steps.cache-workflow-run.outputs.cache-hit != 'true'
+        uses: actions/checkout@v2
+        with:
+          ref: master
+      - run: |
+          git config --global user.email "${{ secrets.AUTO_BUMP_MAIL }}"
+          git config --global user.name "${{ secrets.AUTO_BUMP_NAME }}"
+
+      - name: Microservices verisoning action
+        if: steps.cache-workflow-run.outputs.cache-hit != 'true' && github.event_name != 'workflow_dispatch'
+        uses: cactusoft-ca/microservices-versioning@main
+        id: microservices_versioning
+        with:
+          pull_number: ${{ github.event.number }}
+          owner: cactusoft-ca
+          repo: microservices-versioning
+          token: ${{ secrets.GITHUB_TOKEN }}
+          working_directory: ${{ github.workspace }}
+          services_path: "services"
+          custom_services_path: |
+            service2,custom/service2/path
+
+      # results is empty atm
+      - name: Saving first run results
+        if: steps.cache-workflow-run.outputs.cache-hit == 'true'
+        run: |
+          echo "${{ steps.microservices_versioning.outputs.results }}" > ${{ env.CACHE_PATH }}
+
+      - name: Workflow already triggered
+        if: steps.cache-workflow-run.outputs.cache-hit == 'true'
+        run: |
+          echo "Already runned" > ${{ env.CACHE_PATH }}
 ```
-
-Build the typescript and package it for distribution
-```bash
-$ npm run build && npm run package
-```
-
-Run the tests :heavy_check_mark:  
-```bash
-$ npm test
-
- PASS  ./index.test.js
-  ✓ throws invalid number (3ms)
-  ✓ wait 500 ms (504ms)
-  ✓ test runs (95ms)
-
-...
-```
-
-## Change action.yml
-
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try { 
-      ...
-  } 
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos so we will checkin the packed dist folder. 
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
-```bash
-$ npm run package
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Note: We recommend using the `--license` option for ncc, which will create a license file for all of the production node modules used in your project.
-
-Your action is now published! :rocket: 
-
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-## Validate
-
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml))
-
-```yaml
-uses: ./
-with:
-  milliseconds: 1000
-```
-
-See the [actions tab](https://github.com/actions/typescript-action/actions) for runs of this action! :rocket:
-
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
