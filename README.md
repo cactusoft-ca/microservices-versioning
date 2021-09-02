@@ -92,7 +92,6 @@ jobs:
       - name: Manual autobumping
         if: steps.cache-workflow-run.outputs.cache-hit != 'true' && github.event_name == 'workflow_dispatch'
         uses: cactusoft-ca/microservices-versioning@main
-        id: microservices_versioning
         with:
           pull_number: ${{ github.event.number }}
           owner: cactusoft-ca
