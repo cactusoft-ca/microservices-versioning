@@ -31,7 +31,7 @@ export class ServiceSemVer {
 
   public getNextVersionTag(): string {
     if (this.currentVersion === undefined) {
-      throw new Error('Cannot provite a next version since current version is null')
+      throw new Error('FATAL: Cannot provite a next version since current version is null')
     }
 
     return `${this.name}/v${this.getBumpedVersion()}`;
@@ -40,7 +40,7 @@ export class ServiceSemVer {
   public getBumpedVersion() {
 
     if (this.currentVersion === undefined) {
-      throw new Error('Cannot provite a next version since current version is null')
+      throw new Error('FATAL: Cannot provite a next version since current version is null')
     }
 
     return inc(this.currentVersion, this.releaseType);
@@ -48,7 +48,7 @@ export class ServiceSemVer {
 
   public getNextVersionMessage(): string {
     if (this.currentVersion === undefined) {
-      throw new Error('Cannot provite a next version since current version is null')
+      throw new Error('FATAL: Cannot provite a next version since current version is null')
     }
 
     return `Auto bump ${this.name} ${this.getNextVersionTag()} ${this.releaseType.toString()}`;
@@ -75,11 +75,11 @@ export class ServiceSemVer {
         debug(`Processing version file of type: ${file.type}`)
 
         if (file.fullPath === null) {
-          throw new Error(`Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+          throw new Error(`FATAL: Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
         }
 
         if (file.relativePath === null) {
-          throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+          throw new Error(`FATAL: Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
         }
 
         const result = await file.setVersion(this, git);
@@ -95,8 +95,7 @@ export class ServiceSemVer {
       await this.CreateTag(git);
       await this.CreateRelease(git);
     } catch (error) {
-      actionError(error)
-      throw new Error(`An error occured while setting versions:\n ${error}`)
+      throw new Error(`FATAL: An error occured while setting versions:\n ${error}`)
     }
   }
 

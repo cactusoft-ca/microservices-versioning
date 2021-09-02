@@ -29,7 +29,7 @@ export class GitService {
             debug(`Commit result ${JSON.stringify(result, null, 2)}`)
             return result;
         } catch (error) {
-            throw new Error(`An error occured while commiting: "${message}.\n ${error}`)
+            throw new Error(`FATAL: An error occured while commiting: "${message}.\n ${error}`)
         }
 
     }
@@ -42,7 +42,7 @@ export class GitService {
             return result;
         } catch (error) {
             warning(error)
-            throw new Error(`An error occured while creating a new tag for service: "${service.name}.\n ${error}`)
+            throw new Error(`FATAL: An error occured while creating a new tag for service: "${service.name}.\n ${error}`)
         }
     }
 
@@ -56,7 +56,7 @@ export class GitService {
             debug(`Tag push result ${JSON.stringify(tagPushRes, null, 2)}`)
             return [pushRes, tagPushRes];
         } catch (error) {
-            throw new Error(`An error occured while pushing commits and new tag for service: "${service.name}.\n ${error}`)
+            throw new Error(`FATAL: An error occured while pushing commits and new tag for service: "${service.name}.\n ${error}`)
         }
     }
 

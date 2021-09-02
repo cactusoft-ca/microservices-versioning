@@ -63,7 +63,7 @@ class GitService {
                 return result;
             }
             catch (error) {
-                throw new Error(`An error occured while commiting: "${message}.\n ${error}`);
+                throw new Error(`FATAL: An error occured while commiting: "${message}.\n ${error}`);
             }
         });
     }
@@ -77,7 +77,7 @@ class GitService {
             }
             catch (error) {
                 core_1.warning(error);
-                throw new Error(`An error occured while creating a new tag for service: "${service.name}.\n ${error}`);
+                throw new Error(`FATAL: An error occured while creating a new tag for service: "${service.name}.\n ${error}`);
             }
         });
     }
@@ -92,7 +92,7 @@ class GitService {
                 return [pushRes, tagPushRes];
             }
             catch (error) {
-                throw new Error(`An error occured while pushing commits and new tag for service: "${service.name}.\n ${error}`);
+                throw new Error(`FATAL: An error occured while pushing commits and new tag for service: "${service.name}.\n ${error}`);
             }
         });
     }
@@ -275,7 +275,8 @@ function run() {
 run();
 function setOutputsAndAnnotations(errors, versionsByService) {
     core_1.debug('Setting outputs');
-    const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
+    const fatalErrors = errors.filter(x => x.error.includes('FATAL')).map(x => x.service);
+    const allFailed = [...new Set(fatalErrors)].length === versionsByService.length;
     if (allFailed) {
         core_1.debug('All services failed');
         throw new Error(JSON.stringify(errors, null, 2));
@@ -349,7 +350,7 @@ function setServicePaths(name, workingDirectory, servicesPath, customServicePath
         core_1.debug(`Setting custom path for service ${name} to ${serviceRootPath}`);
     }
     if (!fs_1.existsSync(serviceRootPath)) {
-        throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
+        throw new Error(`FATAL: An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
     }
     servicePaths.path = serviceRootPath;
     core_1.debug(`Root folder for service ${name} has been set to ${serviceRootPath}`);
@@ -411,19 +412,19 @@ class ServiceSemVer {
     }
     getNextVersionTag() {
         if (this.currentVersion === undefined) {
-            throw new Error('Cannot provite a next version since current version is null');
+            throw new Error('FATAL: Cannot provite a next version since current version is null');
         }
         return `${this.name}/v${this.getBumpedVersion()}`;
     }
     getBumpedVersion() {
         if (this.currentVersion === undefined) {
-            throw new Error('Cannot provite a next version since current version is null');
+            throw new Error('FATAL: Cannot provite a next version since current version is null');
         }
         return semver_1.inc(this.currentVersion, this.releaseType);
     }
     getNextVersionMessage() {
         if (this.currentVersion === undefined) {
-            throw new Error('Cannot provite a next version since current version is null');
+            throw new Error('FATAL: Cannot provite a next version since current version is null');
         }
         return `Auto bump ${this.name} ${this.getNextVersionTag()} ${this.releaseType.toString()}`;
     }
@@ -443,10 +444,10 @@ class ServiceSemVer {
                 for (const file of versionFiles) {
                     core_1.debug(`Processing version file of type: ${file.type}`);
                     if (file.fullPath === null) {
-                        throw new Error(`Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+                        throw new Error(`FATAL: Full path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
                     }
                     if (file.relativePath === null) {
-                        throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
+                        throw new Error(`FATAL: Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
                     }
                     const result = yield file.setVersion(this, git);
                     if (result !== null) {
@@ -459,8 +460,7 @@ class ServiceSemVer {
                 yield this.CreateRelease(git);
             }
             catch (error) {
-                core_1.error(error);
-                throw new Error(`An error occured while setting versions:\n ${error}`);
+                throw new Error(`FATAL: An error occured while setting versions:\n ${error}`);
             }
         });
     }
@@ -543,7 +543,7 @@ class VersionFiles {
                 yield gitClient.addFile(this.relativePath);
             }
             catch (err) {
-                throw new Error(`An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
+                throw new Error(`FATAL: An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
             }
         });
     }
@@ -559,7 +559,7 @@ class VersionFiles {
                 yield gitClient.addFile(this.relativePath);
             }
             catch (err) {
-                throw new Error(`An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
+                throw new Error(`FATAL: An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
             }
         });
     }

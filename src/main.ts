@@ -125,7 +125,8 @@ run()
 
 function setOutputsAndAnnotations(errors: { service: string; error: string; }[], versionsByService: ServiceSemVer[]) {
   debug('Setting outputs')
-  const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
+  const fatalErrors = errors.filter(x => x.error.includes('FATAL')).map(x => x.service);
+  const allFailed = [...new Set(fatalErrors)].length === versionsByService.length;
 
   if (allFailed) {
     debug('All services failed')
@@ -222,7 +223,7 @@ function setServicePaths(name: string, workingDirectory: string, servicesPath: s
   }
 
   if (!existsSync(serviceRootPath)) {
-    throw new Error(`An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
+    throw new Error(`FATAL: An expected service root folder is missing. Service name: ${name}, Path: ${serviceRootPath}\nMake sure to checkout your repo`);
   }
 
   servicePaths.path = serviceRootPath;

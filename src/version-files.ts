@@ -52,7 +52,7 @@ export class VersionFiles {
       await gitClient.addFile(this.relativePath);
 
     } catch (err) {
-      throw new Error(`An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
+      throw new Error(`FATAL: An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
     }
   }
 
@@ -70,7 +70,7 @@ export class VersionFiles {
       await gitClient.addFile(this.relativePath);
 
     } catch (err) {
-      throw new Error(`An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
+      throw new Error(`FATAL: An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
     }
   }
 }
