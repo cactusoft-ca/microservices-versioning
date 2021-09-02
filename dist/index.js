@@ -187,28 +187,42 @@ const git_service_1 = __nccwpck_require__(56424);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const pull_number = core_1.getInput('pull_number', { required: true });
-            const owner = core_1.getInput('owner', { required: true });
-            const repo = core_1.getInput('repo', { required: true });
-            const token = core_1.getInput('token', { required: true });
+            const pull_number = core_1.getInput('pull_number');
+            const owner = core_1.getInput('owner');
+            const repo = core_1.getInput('repo');
+            const token = core_1.getInput('token');
             const workingDirectory = core_1.getInput('working_directory', { required: true });
             const servicesPath = core_1.getInput('services_path');
             const customServicesPaths = core_1.getMultilineInput('custom_services_path').map(function (x) {
                 return new service_paths_1.ServicePaths(x.split(',')[0], x.split(',')[1]);
             });
+            const serviceName = core_1.getInput('service_name');
+            const releaseType = core_1.getInput('release_type');
             const git = new git_service_1.GitService(workingDirectory, token);
             core_1.debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
             core_1.debug(`Context repo owner: ${github_1.context.repo.owner}`);
             core_1.debug(`Checking labels for pull request number ${pull_number}`);
             const octokit = github_1.getOctokit(token);
-            const pull = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
-                owner,
-                repo,
-                pull_number: Number(pull_number)
-            });
-            const tags = pull.data.labels.map(a => a == null ? '' : a.name);
+            let bumpLabels;
             const versionPriorities = ['major', 'minor', 'patch'];
-            const bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
+            if (serviceName !== "") {
+                if (releaseType === "") {
+                    throw new Error(`A release type must be provided in order to bump service: "${serviceName}"`);
+                }
+                if (!versionPriorities.includes(releaseType)) {
+                    throw new Error(`A release type must be either Major, Minor or Patch`);
+                }
+                bumpLabels = [`${serviceName}:${releaseType}`];
+            }
+            else {
+                const pull = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
+                    owner,
+                    repo,
+                    pull_number: Number(pull_number)
+                });
+                const tags = pull.data.labels.map(a => a == null ? '' : a.name);
+                bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
+            }
             core_1.debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
             let errors = new Array();
             const versionsByService = linq_to_typescript_1.from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })

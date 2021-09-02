@@ -3,8 +3,8 @@ description: 'This actions is about upping versions of each microservice automat
 author: 'Mostefa Kamal Lala'
 inputs:
   pull_number:
-    required: true
-    description: 'The pull request number, if not provided will take the one from context'
+    required: false
+    description: 'The pull request number, if not provided will take the one from context if not manually ran'
   owner:
     required: true
     description: 'Owner of pull request repo, if not provided will take the one from context'
@@ -17,8 +17,14 @@ inputs:
   working_directory:
     required: true
     description: 'The working directory of the repo'
+  service_name:
+    required: false
+    description: The service name to bump when running manually the workflow
+  release_type:
+    required: false
+    description: The service release type when running manually the workflow (patch, minor, major)
   services_path:
-    required: true
+    required: false
     description: 'The relative path where each microservice is in repo for changing versions in files'
     default: 'services'
   custom_services_path:

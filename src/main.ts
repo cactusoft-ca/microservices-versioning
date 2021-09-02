@@ -13,16 +13,17 @@ import { VersionFileType } from './enums';
 
 async function run(): Promise<void> {
   try {
-    const pull_number: string = getInput('pull_number', { required: true });
-    const owner: string = getInput('owner', { required: true });
-    const repo: string = getInput('repo', { required: true });
-    const token: string = getInput('token', { required: true });
+    const pull_number: string = getInput('pull_number');
+    const owner: string = getInput('owner');
+    const repo: string = getInput('repo');
+    const token: string = getInput('token');
     const workingDirectory = getInput('working_directory', { required: true });
     const servicesPath = getInput('services_path');
     const customServicesPaths = getMultilineInput('custom_services_path').map(function (x: string): ServicePaths {
       return new ServicePaths(x.split(',')[0], x.split(',')[1]);
     });
-
+    const serviceName = getInput('service_name');
+    const releaseType = getInput('release_type');
     const git = new GitService(workingDirectory, token);
 
     debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
@@ -30,15 +31,31 @@ async function run(): Promise<void> {
     debug(`Checking labels for pull request number ${pull_number}`);
 
     const octokit = getOctokit(token)
-    const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
-      owner,
-      repo,
-      pull_number: Number(pull_number)
-    })
 
-    const tags: string[] = pull.data.labels.map(a => a == null ? '' : a.name as string);
+    let bumpLabels: string[]
     const versionPriorities = ['major', 'minor', 'patch'];
-    const bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
+
+    if (serviceName !== "") {
+      if(releaseType === ""){
+        throw new Error(`A release type must be provided in order to bump service: "${serviceName}"`)
+      }
+
+      if(!versionPriorities.includes(releaseType)){
+        throw new Error(`A release type must be either Major, Minor or Patch`)
+      }
+
+      bumpLabels = [`${serviceName}:${releaseType}`]
+    } else {
+
+      const pull = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
+        owner,
+        repo,
+        pull_number: Number(pull_number)
+      })
+
+      const tags: string[] = pull.data.labels.map(a => a == null ? '' : a.name as string);
+      bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
+    }
 
     debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
 
@@ -78,7 +95,7 @@ async function run(): Promise<void> {
         await service.setVersions(currentVersion, git);
       } catch (error) {
         debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
-        errors.push({ service: service.name,error: error.message });
+        errors.push({ service: service.name, error: error.message });
       }
     }
 
