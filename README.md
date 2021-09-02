@@ -51,11 +51,13 @@ jobs:
     concurrency: version-bumping
     steps:
       - name: Setting variables
+        if: github.event_name != 'workflow_dispatch'
         run: |
           echo "UNIQUE_FILE_NAME=${{ github.workflow }}-${{ github.run_id }}-${{ github.run_number }}" >> $GITHUB_ENV
           echo "CACHE_PATH=${{ github.workspace }}/firstrun" >> $GITHUB_ENV
 
       - name: Cache workflow run
+        if: github.event_name != 'workflow_dispatch'
         id: cache-workflow-run
         uses: actions/cache@v2
         env:
@@ -105,12 +107,12 @@ jobs:
 
       # results is empty atm
       - name: Saving first run results
-        if: steps.cache-workflow-run.outputs.cache-hit == 'true'
+        if: github.event_name != 'workflow_dispatch' && steps.cache-workflow-run.outputs.cache-hit == 'true'
         run: |
           echo "${{ steps.microservices_versioning.outputs.results }}" > ${{ env.CACHE_PATH }}
 
       - name: Workflow already triggered
-        if: steps.cache-workflow-run.outputs.cache-hit == 'true'
+        if: github.event_name != 'workflow_dispatch' && steps.cache-workflow-run.outputs.cache-hit == 'true'
         run: |
           echo "Already runned" > ${{ env.CACHE_PATH }}
 ```
