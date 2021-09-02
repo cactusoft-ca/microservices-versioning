@@ -281,10 +281,10 @@ function setOutputsAndAnnotations(errors, versionsByService) {
     if (errors.length > 0) {
         for (const error of errors) {
             if (error.error.includes('An expected service root folder is missing')) {
-                core_1.error(`Service: "${error.service}" was not bumped.\n ${error.error}`);
+                core_1.warning(`Service not BUMPED: "${error.service}".\n ${error.error}`);
             }
             else {
-                core_1.warning(`Service bumping:: "${error.service}".\n ${error.error}`);
+                core_1.warning(`Service bump warning:: "${error.service}".\n ${error.error}`);
             }
         }
     }
