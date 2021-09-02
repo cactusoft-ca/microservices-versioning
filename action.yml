@@ -1,11 +1,29 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Microservices versioning'
+description: 'This actions is about upping versions of each microservice automatically'
+author: 'Mostefa Kamal Lala'
 inputs:
-  milliseconds: # change this
+  pull_number:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'The pull request number, if not provided will take the one from context'
+  owner:
+    required: true
+    description: 'Owner of pull request repo, if not provided will take the one from context'
+  repo:
+    required: true
+    description: 'Repo name, if not provided will take the one from context'
+  token:
+    required: true
+    description: 'Github token, if not provided will take the one from context'
+  working_directory:
+    required: true
+    description: 'The working directory of the repo'
+  services_path:
+    required: true
+    description: 'The relative path where each microservice is in repo for changing versions in files'
+    default: 'services'
+  custom_services_path:
+    required: false
+    description: 'A list of comma separated relative path by microservice that are not in the common place in the repo. '
 runs:
   using: 'node12'
   main: 'dist/index.js'
