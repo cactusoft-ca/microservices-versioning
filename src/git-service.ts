@@ -83,7 +83,7 @@ export class GitService {
         }
       `);
 
-        debug(`GH GraphQl result: \n ${JSON.stringify(repository)}`)
+        debug(`GH GraphQl result: \n ${JSON.stringify(repository, null, 2)}`)
         const result = repository.refs.edges[0].node.name.replace(`${serviceName}/v`, '');
         return result as string
     }

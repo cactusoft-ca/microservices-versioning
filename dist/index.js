@@ -117,7 +117,7 @@ class GitService {
           }
         }
       `);
-            core_1.debug(`GH GraphQl result: \n ${JSON.stringify(repository)}`);
+            core_1.debug(`GH GraphQl result: \n ${JSON.stringify(repository, null, 2)}`);
             const result = repository.refs.edges[0].node.name.replace(`${serviceName}/v`, '');
             return result;
         });
@@ -201,7 +201,7 @@ function run() {
             const releaseType = core_1.getInput('release_type');
             const git = new git_service_1.GitService(workingDirectory, token);
             const uniqueService = serviceName !== "";
-            core_1.debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
+            core_1.debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths, null, 2)}`);
             core_1.debug(`Context repo owner: ${github_1.context.repo.owner}`);
             core_1.debug(`Checking labels for pull request number ${pull_number}`);
             const octokit = github_1.getOctokit(token);
@@ -228,7 +228,7 @@ function run() {
                 const tags = pull.data.labels.map(a => a == null ? '' : a.name);
                 bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
             }
-            core_1.debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
+            core_1.debug(`Versioning Labels ${JSON.stringify(bumpLabels, null, 2)}`);
             let errors = new Array();
             let versionsByService = linq_to_typescript_1.from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
                 .select(function (x) {
@@ -238,7 +238,7 @@ function run() {
                 }
                 catch (error) {
                     core_1.debug(`SetServicePaths ERROR: ${error}`);
-                    core_1.debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+                    core_1.debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`);
                     errors.push({ service: x.key, error: error.message });
                 }
                 return new service_sem_ver_1.ServiceSemVer(x.key, JSON.stringify(x.select(x => x.split(':')[1]).toArray().sort(function (a, b) {
@@ -248,7 +248,7 @@ function run() {
                 })[0]).replace(/['"]+/g, ''), servicePaths, git);
             }).toArray();
             const unexistantServices = errors.filter(x => x.error.includes('An expected service root folder is missing')).map(x => x.service);
-            core_1.debug(`List of unexistant services:\n ${JSON.stringify(unexistantServices)}`);
+            core_1.debug(`List of unexistant services:\n ${JSON.stringify(unexistantServices, null, 2)}`);
             versionsByService = versionsByService.filter(svc => !unexistantServices.includes(svc.name));
             if (versionsByService.length === 0) {
                 core_1.debug('No service to bump');
@@ -261,7 +261,7 @@ function run() {
                     yield service.setVersions(currentVersion, git);
                 }
                 catch (error) {
-                    core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`);
+                    core_1.debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error, null, 2)}`);
                     errors.push({ service: service.name, error: error.message });
                 }
             }
@@ -437,7 +437,7 @@ class ServiceSemVer {
                 }
                 const versionFiles = this.paths.versionFiles;
                 core_1.debug(`${versionFiles === null || versionFiles === void 0 ? void 0 : versionFiles.length} Version files to process for service "${this.name}"`);
-                core_1.debug(`${JSON.stringify(versionFiles)}`);
+                core_1.debug(`${JSON.stringify(versionFiles, null, 2)}`);
                 for (const file of versionFiles) {
                     core_1.debug(`Processing version file of type: ${file.type}`);
                     if (file.fullPath === null) {
@@ -452,7 +452,7 @@ class ServiceSemVer {
                     }
                 }
                 const commitRes = yield git.commit(this.getNextVersionMessage());
-                core_1.debug(JSON.stringify(commitRes));
+                core_1.debug(JSON.stringify(commitRes, null, 2));
                 yield this.CreateTag(git);
                 yield this.CreateRelease(git);
             }
@@ -465,16 +465,16 @@ class ServiceSemVer {
     CreateTag(git) {
         return __awaiter(this, void 0, void 0, function* () {
             const tagRes = yield git.createAnnotatedTag(this);
-            core_1.debug(JSON.stringify(tagRes));
+            core_1.debug(JSON.stringify(tagRes, null, 2));
             const pushRes = yield git.pushAll(this);
-            core_1.debug(JSON.stringify(pushRes));
+            core_1.debug(JSON.stringify(pushRes, null, 2));
             this.tagged = true;
         });
     }
     CreateRelease(git) {
         return __awaiter(this, void 0, void 0, function* () {
             const createReleaseRes = yield git.createRelease(github_1.context.repo.owner, github_1.context.repo.repo, this.getNextVersionTag(), "a body", true);
-            core_1.debug(JSON.stringify(createReleaseRes));
+            core_1.debug(JSON.stringify(createReleaseRes, null, 2));
             this.tagged = false;
         });
     }

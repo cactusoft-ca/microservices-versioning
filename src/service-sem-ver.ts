@@ -69,7 +69,7 @@ export class ServiceSemVer {
       const versionFiles = this.paths.versionFiles;
 
       debug(`${versionFiles?.length} Version files to process for service "${this.name}"`)
-      debug(`${JSON.stringify(versionFiles)}`)
+      debug(`${JSON.stringify(versionFiles, null, 2)}`)
 
       for (const file of versionFiles) {
         debug(`Processing version file of type: ${file.type}`)
@@ -90,7 +90,7 @@ export class ServiceSemVer {
       }
 
       const commitRes = await git.commit(this.getNextVersionMessage())
-      debug(JSON.stringify(commitRes))
+      debug(JSON.stringify(commitRes, null, 2))
 
       await this.CreateTag(git);
       await this.CreateRelease(git);
@@ -102,17 +102,17 @@ export class ServiceSemVer {
 
   private async CreateTag(git: GitService) {
     const tagRes = await git.createAnnotatedTag(this);
-    debug(JSON.stringify(tagRes));
+    debug(JSON.stringify(tagRes, null, 2));
 
     const pushRes = await git.pushAll(this);
-    debug(JSON.stringify(pushRes));
+    debug(JSON.stringify(pushRes, null, 2));
 
     this.tagged = true;
   }
 
   private async CreateRelease(git: GitService) {
     const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true);
-    debug(JSON.stringify(createReleaseRes));
+    debug(JSON.stringify(createReleaseRes, null, 2));
 
     this.tagged = false;
   }

@@ -30,7 +30,7 @@ async function run(): Promise<void> {
     const git = new GitService(workingDirectory, token);
     const uniqueService = serviceName !== "";
 
-    debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths)}`);
+    debug(`customServicesPaths:\n ${JSON.stringify(customServicesPaths, null ,2)}`);
     debug(`Context repo owner: ${context.repo.owner}`);
     debug(`Checking labels for pull request number ${pull_number}`);
 
@@ -65,7 +65,7 @@ async function run(): Promise<void> {
       bumpLabels = tags.filter(x => versionPriorities.some(x.includes.bind(x)));
     }
 
-    debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
+    debug(`Versioning Labels ${JSON.stringify(bumpLabels, null, 2)}`);
 
     let errors = new Array<{ service: string, error: string }>()
 
@@ -77,7 +77,7 @@ async function run(): Promise<void> {
           servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths, uniqueService, servicePath);
         } catch (error) {
           debug(`SetServicePaths ERROR: ${error}`)
-          debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`)
+          debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`)
           errors.push({ service: x.key, error: error.message });
         }
 
@@ -93,7 +93,7 @@ async function run(): Promise<void> {
       }).toArray();
 
     const unexistantServices = errors.filter(x => x.error.includes('An expected service root folder is missing')).map(x => x.service);
-    debug(`List of unexistant services:\n ${JSON.stringify(unexistantServices)}`)
+    debug(`List of unexistant services:\n ${JSON.stringify(unexistantServices, null, 2)}`)
 
     versionsByService = versionsByService.filter(svc => !unexistantServices.includes(svc.name));
 
@@ -108,7 +108,7 @@ async function run(): Promise<void> {
         const currentVersion = await git.getLatestTagByServiceName(service.name, owner, repo);
         await service.setVersions(currentVersion, git);
       } catch (error) {
-        debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error)}`)
+        debug(`setVersions Service: ${service.name} push errors: ${JSON.stringify(error, null, 2)}`)
         errors.push({ service: service.name, error: error.message });
       }
     }
