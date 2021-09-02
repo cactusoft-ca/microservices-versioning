@@ -97,9 +97,9 @@ jobs:
           repo: microservices-versioning
           token: ${{ secrets.GITHUB_TOKEN }}
           working_directory: ${{ github.workspace }}
-          services_path: "services"
-          custom_services_path: |
-            service2,custom/service2/path
+          service_name: service2
+          release_type: minor
+          service_path: "direct/path/to/services2"
 
       # results is empty atm
       - name: Saving first run results

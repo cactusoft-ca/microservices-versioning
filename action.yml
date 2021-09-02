@@ -23,6 +23,9 @@ inputs:
   release_type:
     required: false
     description: The service release type when running manually the workflow (patch, minor, major)
+  service_path:
+    required: false
+    description: 'The service path when running manually the workflow'
   services_path:
     required: false
     description: 'The relative path where each microservice is in repo for changing versions in files'

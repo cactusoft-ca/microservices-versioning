@@ -193,6 +193,7 @@ function run() {
             const token = core_1.getInput('token');
             const workingDirectory = core_1.getInput('working_directory', { required: true });
             const servicesPath = core_1.getInput('services_path');
+            const servicePath = core_1.getInput('service_path');
             const customServicesPaths = core_1.getMultilineInput('custom_services_path').map(function (x) {
                 return new service_paths_1.ServicePaths(x.split(',')[0], x.split(',')[1]);
             });
@@ -209,6 +210,9 @@ function run() {
             if (uniqueService) {
                 if (releaseType === "") {
                     throw new Error(`A release type must be provided in order to bump service: "${serviceName}"`);
+                }
+                if (servicePath === "") {
+                    throw new Error(`A service path must be provided in order to bump service: "${serviceName}"`);
                 }
                 if (!versionPriorities.includes(releaseType)) {
                     throw new Error(`A release type must be either Major, Minor or Patch`);
@@ -230,7 +234,7 @@ function run() {
                 .select(function (x) {
                 let servicePaths = null;
                 try {
-                    servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths, uniqueService);
+                    servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths, uniqueService, servicePath);
                 }
                 catch (error) {
                     core_1.debug(`SetServicePaths ERROR: ${error}`);
@@ -296,7 +300,7 @@ function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDire
         }
     }
 }
-function setServicePaths(name, workingDirectory, servicePath, customServicePaths, uniqueService) {
+function setServicePaths(name, workingDirectory, servicesPath, customServicePaths, uniqueService, uniqueServicePath) {
     core_1.debug(`Setting service path for ${name}`);
     const servicePaths = new service_paths_1.ServicePaths();
     const customeServiceNames = customServicePaths.map(function (x) { return x.name; });
@@ -304,10 +308,10 @@ function setServicePaths(name, workingDirectory, servicePath, customServicePaths
     let serviceRootPath;
     if (customServicePathIndex === -1) {
         if (uniqueService) {
-            serviceRootPath = path_1.join(workingDirectory, servicePath);
+            serviceRootPath = path_1.join(workingDirectory, uniqueServicePath);
         }
         else {
-            serviceRootPath = path_1.join(workingDirectory, servicePath, name);
+            serviceRootPath = path_1.join(workingDirectory, servicesPath, name);
         }
     }
     else {

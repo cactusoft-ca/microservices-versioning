@@ -19,6 +19,8 @@ async function run(): Promise<void> {
     const token: string = getInput('token');
     const workingDirectory = getInput('working_directory', { required: true });
     const servicesPath = getInput('services_path');
+    const servicePath = getInput('service_path');
+
     const customServicesPaths = getMultilineInput('custom_services_path').map(function (x: string): ServicePaths {
       return new ServicePaths(x.split(',')[0], x.split(',')[1]);
     });
@@ -39,6 +41,10 @@ async function run(): Promise<void> {
     if (uniqueService) {
       if(releaseType === ""){
         throw new Error(`A release type must be provided in order to bump service: "${serviceName}"`)
+      }
+
+      if(servicePath === ""){
+        throw new Error(`A service path must be provided in order to bump service: "${serviceName}"`)
       }
 
       if(!versionPriorities.includes(releaseType)){
@@ -67,7 +73,7 @@ async function run(): Promise<void> {
         let servicePaths: ServicePaths | null = null;
 
         try {
-          servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths, uniqueService);
+          servicePaths = setServicePaths(x.key, workingDirectory, servicesPath, customServicesPaths, uniqueService, servicePath);
         } catch (error) {
           debug(`SetServicePaths ERROR: ${error}`)
           debug(`setServicePaths Service: ${x.key} push errors: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`)
@@ -148,7 +154,7 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
   }
 }
 
-function setServicePaths(name: string, workingDirectory: string, servicePath: string, customServicePaths: ServicePaths[], uniqueService : boolean) {
+function setServicePaths(name: string, workingDirectory: string, servicesPath: string, customServicePaths: ServicePaths[], uniqueService : boolean, uniqueServicePath: string) {
   debug(`Setting service path for ${name}`)
 
   const servicePaths = new ServicePaths()
@@ -158,9 +164,9 @@ function setServicePaths(name: string, workingDirectory: string, servicePath: st
   let serviceRootPath
   if (customServicePathIndex === -1) {
     if(uniqueService){
-      serviceRootPath = join(workingDirectory, servicePath)
+      serviceRootPath = join(workingDirectory, uniqueServicePath)
     }else{
-      serviceRootPath = join(workingDirectory, servicePath, name)
+      serviceRootPath = join(workingDirectory, servicesPath, name)
     }
   } else {
 
