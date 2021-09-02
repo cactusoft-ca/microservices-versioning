@@ -274,8 +274,10 @@ function run() {
 }
 run();
 function setOutputsAndAnnotations(errors, versionsByService) {
+    core_1.debug('Setting outputs');
     const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
     if (allFailed) {
+        core_1.debug('All services failed');
         throw new Error(JSON.stringify(errors, null, 2));
     }
     if (errors.length > 0) {

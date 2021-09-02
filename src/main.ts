@@ -124,9 +124,12 @@ run()
 
 
 function setOutputsAndAnnotations(errors: { service: string; error: string; }[], versionsByService: ServiceSemVer[]) {
+  debug('Setting outputs')
   const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
 
   if (allFailed) {
+    debug('All services failed')
+
     throw new Error(JSON.stringify(errors, null, 2));
   }
 
