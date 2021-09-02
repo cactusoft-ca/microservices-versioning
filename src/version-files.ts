@@ -18,19 +18,19 @@ export class VersionFiles {
     this.relativePath = relativePath;
   }
 
-  public async setVersion(service: ServiceSemVer, gitClient: GitService) {
+  public async setVersion(service: ServiceSemVer, gitClient: GitService) : Promise<{type: VersionFileType, path: string} | null> {
     debug(`Setting version in file of type: ${this.type} located at: ${this.fullPath} for service: ${service.name}`)
 
     switch (this.type) {
       case VersionFileType.DotNetCore:
-        await this.setDotNetCoreBuildPropVersion(service, gitClient)
-        break;
+        await this.setDotNetCoreBuildPropVersion(service, gitClient);
+        return {type: VersionFileType.DotNetCore, path: this.relativePath};
       case VersionFileType.Helm:
-        await this.setHelmChartAppVersion(service, gitClient)
-        break;
+        await this.setHelmChartAppVersion(service, gitClient);
+        return {type: VersionFileType.DotNetCore, path: this.relativePath};
       default:
-        warning(`No method found to modify version in file of type: ${this.type} located at: ${this.fullPath} for service: ${service.name}`)
-        break;
+        warning(`No method found to modify version in file of type: ${this.type} located at: ${this.fullPath} for service: ${service.name}`);
+        return null;
     }
   }
 
@@ -49,7 +49,7 @@ export class VersionFiles {
 
       debug(`Service "${service.name}": Updated .Net Core BuildPropVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${xml}`);
 
-      await gitClient.addFile(this.relativePath)
+      await gitClient.addFile(this.relativePath);
 
     } catch (err) {
       throw new Error(`An error occured trying to update helm chart for service ${service.name} - err: ${err}`);
@@ -67,7 +67,7 @@ export class VersionFiles {
 
       debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${JSON.stringify(load(file), null, 2)}`);
 
-      await gitClient.addFile(this.relativePath)
+      await gitClient.addFile(this.relativePath);
 
     } catch (err) {
       throw new Error(`An error occured trying to update helm chart for service ${service.name} - err: ${err}`);

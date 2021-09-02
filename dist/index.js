@@ -230,7 +230,7 @@ function run() {
             }
             core_1.debug(`Versioning Labels ${JSON.stringify(bumpLabels)}`);
             let errors = new Array();
-            const versionsByService = linq_to_typescript_1.from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
+            let versionsByService = linq_to_typescript_1.from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
                 .select(function (x) {
                 let servicePaths = null;
                 try {
@@ -247,8 +247,12 @@ function run() {
                     return aKey - bKey;
                 })[0]).replace(/['"]+/g, ''), servicePaths, git);
             }).toArray();
+            const unexistantServices = errors.filter(x => x.error.includes('An expected service root folder is missing')).map(x => x.service);
+            core_1.debug(`List of unexistant services:\n ${JSON.stringify(unexistantServices)}`);
+            versionsByService = versionsByService.filter(svc => !unexistantServices.includes(svc.name));
             if (versionsByService.length === 0) {
                 core_1.debug('No service to bump');
+                setOutputsAndAnnotations(errors, versionsByService);
                 return;
             }
             for (const service of versionsByService) {
@@ -261,15 +265,7 @@ function run() {
                     errors.push({ service: service.name, error: error.message });
                 }
             }
-            const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
-            if (allFailed) {
-                throw new Error(JSON.stringify(errors, null, 2));
-            }
-            if (errors.length > 0) {
-                for (const error of errors) {
-                    core_1.warning(`Service: "${error.service}" was not bumped.\n ${error.error} `);
-                }
-            }
+            setOutputsAndAnnotations(errors, versionsByService);
         }
         catch (error) {
             core_1.setFailed(error.message);
@@ -277,6 +273,34 @@ function run() {
     });
 }
 run();
+function setOutputsAndAnnotations(errors, versionsByService) {
+    const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
+    if (allFailed) {
+        throw new Error(JSON.stringify(errors, null, 2));
+    }
+    if (errors.length > 0) {
+        for (const error of errors) {
+            if (error.error.includes('An expected service root folder is missing')) {
+                core_1.error(`Service: "${error.service}" was not bumped.\n ${error.error}`);
+            }
+            else {
+                core_1.warning(`Service bumping:: "${error.service}".\n ${error.error}`);
+            }
+        }
+    }
+    let results = new Array();
+    for (const svc of versionsByService) {
+        results.push({
+            service: svc.name,
+            modifiedFiles: svc.modifedFiles,
+            tagged: svc.tagged,
+            released: svc.released
+        });
+    }
+    if (results.length > 0) {
+        core_1.setOutput('results', JSON.stringify(results, null, 2));
+    }
+}
 function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDirectory) {
     const versionFiles = new Array();
     try {
@@ -373,6 +397,9 @@ const core_1 = __nccwpck_require__(42186);
 const github_1 = __nccwpck_require__(95438);
 class ServiceSemVer {
     constructor(name, releaseType, paths, gitService) {
+        this.tagged = false;
+        this.released = false;
+        this.modifedFiles = new Array();
         core_1.debug(`Context repo owner from GitService: ${github_1.context.repo.owner}`);
         this.name = name;
         this.releaseType = releaseType;
@@ -397,7 +424,8 @@ class ServiceSemVer {
                 this.currentVersion = currentVersion;
                 if (this.paths === null || this.paths.versionFiles === null) {
                     core_1.warning(`No Version files to process for service "${this.name}"`);
-                    yield this.TagAndRelease(git);
+                    yield this.CreateTag(git);
+                    yield this.CreateRelease(git);
                     return;
                 }
                 const versionFiles = this.paths.versionFiles;
@@ -411,11 +439,15 @@ class ServiceSemVer {
                     if (file.relativePath === null) {
                         throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
                     }
-                    yield file.setVersion(this, git);
+                    const result = yield file.setVersion(this, git);
+                    if (result !== null) {
+                        this.modifedFiles.push(result);
+                    }
                 }
                 const commitRes = yield git.commit(this.getNextVersionMessage());
                 core_1.debug(JSON.stringify(commitRes));
-                yield this.TagAndRelease(git);
+                yield this.CreateTag(git);
+                yield this.CreateRelease(git);
             }
             catch (error) {
                 core_1.error(error);
@@ -423,14 +455,20 @@ class ServiceSemVer {
             }
         });
     }
-    TagAndRelease(git) {
+    CreateTag(git) {
         return __awaiter(this, void 0, void 0, function* () {
             const tagRes = yield git.createAnnotatedTag(this);
             core_1.debug(JSON.stringify(tagRes));
             const pushRes = yield git.pushAll(this);
             core_1.debug(JSON.stringify(pushRes));
+            this.tagged = true;
+        });
+    }
+    CreateRelease(git) {
+        return __awaiter(this, void 0, void 0, function* () {
             const createReleaseRes = yield git.createRelease(github_1.context.repo.owner, github_1.context.repo.repo, this.getNextVersionTag(), "a body", true);
             core_1.debug(JSON.stringify(createReleaseRes));
+            this.tagged = false;
         });
     }
 }
@@ -472,13 +510,13 @@ class VersionFiles {
             switch (this.type) {
                 case enums_1.VersionFileType.DotNetCore:
                     yield this.setDotNetCoreBuildPropVersion(service, gitClient);
-                    break;
+                    return { type: enums_1.VersionFileType.DotNetCore, path: this.relativePath };
                 case enums_1.VersionFileType.Helm:
                     yield this.setHelmChartAppVersion(service, gitClient);
-                    break;
+                    return { type: enums_1.VersionFileType.DotNetCore, path: this.relativePath };
                 default:
                     core_1.warning(`No method found to modify version in file of type: ${this.type} located at: ${this.fullPath} for service: ${service.name}`);
-                    break;
+                    return null;
             }
         });
     }

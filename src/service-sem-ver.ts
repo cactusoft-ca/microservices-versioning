@@ -3,6 +3,7 @@ import { GitService } from './git-service';
 import { ServicePaths } from "./service-paths";
 import { debug, warning, error as actionError } from '@actions/core'
 import { context } from "@actions/github"
+import { VersionFileType } from './enums';
 
 export class ServiceSemVer {
   public name: string;
@@ -10,6 +11,9 @@ export class ServiceSemVer {
   public paths: ServicePaths | null;
   public currentVersion: string | undefined;
   public gitService: GitService;
+  public tagged: boolean = false;
+  public released: boolean = false;
+  public modifedFiles = new Array<{type: VersionFileType, path: string}>()
 
   constructor(
     name: string,
@@ -48,7 +52,8 @@ export class ServiceSemVer {
       if (this.paths === null || this.paths.versionFiles === null) {
         warning(`No Version files to process for service "${this.name}"`)
 
-        await this.TagAndRelease(git);
+        await this.CreateTag(git);
+        await this.CreateRelease(git);
         return;
       }
 
@@ -68,27 +73,38 @@ export class ServiceSemVer {
           throw new Error(`Relative path is missing for version file of type: "${file.type}" for service: "${this.name}"`);
         }
 
-        await file.setVersion(this, git)
+        const result = await file.setVersion(this, git);
+
+        if(result !== null){
+          this.modifedFiles.push(result);
+        }
       }
 
       const commitRes = await git.commit(this.getNextVersionMessage())
       debug(JSON.stringify(commitRes))
 
-      await this.TagAndRelease(git);
+      await this.CreateTag(git);
+      await this.CreateRelease(git);
     } catch (error) {
       actionError(error)
       throw new Error(`An error occured while setting versions:\n ${error}`)
     }
   }
 
-  private async TagAndRelease(git: GitService) {
+  private async CreateTag(git: GitService) {
     const tagRes = await git.createAnnotatedTag(this);
     debug(JSON.stringify(tagRes));
 
     const pushRes = await git.pushAll(this);
     debug(JSON.stringify(pushRes));
 
+    this.tagged = true;
+  }
+
+  private async CreateRelease(git: GitService) {
     const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true);
     debug(JSON.stringify(createReleaseRes));
+
+    this.tagged = false;
   }
 }

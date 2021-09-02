@@ -10,6 +10,7 @@ import { VersionFiles } from "./version-files";
 import { ServiceSemVer } from "./service-sem-ver";
 import { GitService } from "./git-service";
 import { VersionFileType } from './enums';
+import { stringify } from 'querystring';
 
 async function run(): Promise<void> {
   try {
@@ -39,15 +40,15 @@ async function run(): Promise<void> {
     const versionPriorities = ['major', 'minor', 'patch'];
 
     if (uniqueService) {
-      if(releaseType === ""){
+      if (releaseType === "") {
         throw new Error(`A release type must be provided in order to bump service: "${serviceName}"`)
       }
 
-      if(servicePath === ""){
+      if (servicePath === "") {
         throw new Error(`A service path must be provided in order to bump service: "${serviceName}"`)
       }
 
-      if(!versionPriorities.includes(releaseType)){
+      if (!versionPriorities.includes(releaseType)) {
         throw new Error(`A release type must be either Major, Minor or Patch`)
       }
 
@@ -68,7 +69,7 @@ async function run(): Promise<void> {
 
     let errors = new Array<{ service: string, error: string }>()
 
-    const versionsByService: ServiceSemVer[] = from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
+    let versionsByService: ServiceSemVer[] = from(bumpLabels).groupBy(function (x) { return x.split(':')[0]; })
       .select(function (x) {
         let servicePaths: ServicePaths | null = null;
 
@@ -91,8 +92,14 @@ async function run(): Promise<void> {
           git);
       }).toArray();
 
+    const unexistantServices = errors.filter(x => x.error.includes('An expected service root folder is missing')).map(x => x.service);
+    debug(`List of unexistant services:\n ${JSON.stringify(unexistantServices)}`)
+
+    versionsByService = versionsByService.filter(svc => !unexistantServices.includes(svc.name));
+
     if (versionsByService.length === 0) {
       debug('No service to bump');
+      setOutputsAndAnnotations(errors, versionsByService);
       return
     }
 
@@ -106,17 +113,7 @@ async function run(): Promise<void> {
       }
     }
 
-    const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
-
-    if (allFailed) {
-      throw new Error(JSON.stringify(errors, null, 2))
-    }
-
-    if (errors.length > 0) {
-      for (const error of errors) {
-        warning(`Service: "${error.service}" was not bumped.\n ${error.error} `)
-      }
-    }
+    setOutputsAndAnnotations(errors, versionsByService);
 
   } catch (error) {
     setFailed(error.message)
@@ -124,6 +121,43 @@ async function run(): Promise<void> {
 }
 
 run()
+
+
+function setOutputsAndAnnotations(errors: { service: string; error: string; }[], versionsByService: ServiceSemVer[]) {
+  const allFailed = [...new Set(errors.map(x => x.service))].length === versionsByService.length;
+
+  if (allFailed) {
+    throw new Error(JSON.stringify(errors, null, 2));
+  }
+
+  if (errors.length > 0) {
+    for (const error of errors) {
+      if (error.error.includes('An expected service root folder is missing')) {
+        actionError(`Service: "${error.service}" was not bumped.\n ${error.error}`)
+      } else {
+        warning(`Service bumping:: "${error.service}".\n ${error.error}`);
+      }
+    }
+  }
+
+  let results = new Array<{
+    service: string,
+    modifiedFiles: { type: VersionFileType, path: string }[],
+    tagged: boolean,
+    released: boolean
+  }>()
+
+  for (const svc of versionsByService) {
+    results.push({
+      service: svc.name,
+      modifiedFiles: svc.modifedFiles,
+      tagged: svc.tagged,
+      released: svc.released
+    })
+  }
+
+  setOutput('results', JSON.stringify(results, null, 2))
+}
 
 function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string, workingDirectory: string) {
   const versionFiles: VersionFiles[] = new Array<VersionFiles>()
@@ -154,7 +188,7 @@ function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: str
   }
 }
 
-function setServicePaths(name: string, workingDirectory: string, servicesPath: string, customServicePaths: ServicePaths[], uniqueService : boolean, uniqueServicePath: string) {
+function setServicePaths(name: string, workingDirectory: string, servicesPath: string, customServicePaths: ServicePaths[], uniqueService: boolean, uniqueServicePath: string) {
   debug(`Setting service path for ${name}`)
 
   const servicePaths = new ServicePaths()
@@ -163,9 +197,9 @@ function setServicePaths(name: string, workingDirectory: string, servicesPath: s
 
   let serviceRootPath
   if (customServicePathIndex === -1) {
-    if(uniqueService){
+    if (uniqueService) {
       serviceRootPath = join(workingDirectory, uniqueServicePath)
-    }else{
+    } else {
       serviceRootPath = join(workingDirectory, servicesPath, name)
     }
   } else {
