@@ -97,9 +97,11 @@ jobs:
           repo: microservices-versioning
           token: ${{ secrets.GITHUB_TOKEN }}
           working_directory: ${{ github.workspace }}
-          service_name: service2
-          release_type: minor
-          service_path: "direct/path/to/services2"
+          service_name: ${{ github.event.inputs.service_name }}
+          #  release type: Patch, minor or major
+          release_type: ${{ github.event.inputs.release_type }}
+          #  service_path ex: direct/path/to/services2
+          service_path: ${{ github.event.inputs.service_path }}
 
       # results is empty atm
       - name: Saving first run results
