@@ -1,5 +1,5 @@
-import simpleGit, { CommitResult, PushResult, SimpleGit } from 'simple-git';
-import { debug, setOutput, setFailed, warning } from '@actions/core'
+import simpleGit, { CommitResult, PushResult, SimpleGit, StatusResult } from 'simple-git';
+import { debug, setFailed, warning } from '@actions/core'
 import { ServiceSemVer } from './service-sem-ver';
 import { graphql } from "@octokit/graphql";
 import { getOctokit, context } from "@actions/github"
@@ -32,6 +32,19 @@ export class GitService {
             throw new Error(`FATAL: An error occured while commiting: "${message}.\n ${error}`)
         }
 
+    }
+
+    public async commitGeneratedCode(message: string): Promise<CommitResult | StatusResult >{
+        const status = await this.git.status();
+        console.log(`Status: ${JSON.stringify(status, null, 2)}`)
+
+        if (status.files.length > 0) {
+            const add = await this.git.add(status.files.map(x => x.path))
+            console.log(add)
+            return await this.commit(message)
+        }
+
+        return status
     }
 
     public async createAnnotatedTag(service: ServiceSemVer): Promise<{ name: string }> {

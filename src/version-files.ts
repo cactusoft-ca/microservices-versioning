@@ -38,7 +38,7 @@ export class VersionFiles {
     try {
       const data = readFileSync(this.fullPath, { encoding: "utf8" })
       const result = await parseStringPromise(data);
-      const nextVersion = service.getNextVersionTag();
+      const nextVersion = service.getBumpedVersion();
 
       result.Project.PropertyGroup[0].Version = nextVersion;
 
@@ -60,7 +60,7 @@ export class VersionFiles {
     try {
       const file = readFileSync(this.fullPath, { encoding: "utf8" })
       const doc = load(file) as { appVersion?: string };
-      const nextVersion = service.getNextVersionTag();
+      const nextVersion = service.getBumpedVersion() as string;
       doc.appVersion = nextVersion;
 
       writeFileSync(this.fullPath, dump(doc));

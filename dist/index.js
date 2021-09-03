@@ -67,6 +67,18 @@ class GitService {
             }
         });
     }
+    commitGeneratedCode(message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const status = yield this.git.status();
+            console.log(`Status: ${JSON.stringify(status, null, 2)}`);
+            if (status.files.length > 0) {
+                const add = yield this.git.add(status.files.map(x => x.path));
+                console.log(add);
+                return yield this.commit(message);
+            }
+            return status;
+        });
+    }
     createAnnotatedTag(service) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -452,6 +464,8 @@ class ServiceSemVer {
                 }
                 const commitRes = yield git.commit(this.getNextVersionMessage());
                 core_1.debug(JSON.stringify(commitRes, null, 2));
+                const generatedCodeCommitRes = yield git.commitGeneratedCode(`Generated files - upping ${this.getNextVersionTag}`);
+                console.log(JSON.stringify(generatedCodeCommitRes));
                 yield this.CreateTag(git);
                 yield this.CreateRelease(git);
             }
@@ -532,7 +546,7 @@ class VersionFiles {
             try {
                 const data = fs_1.readFileSync(this.fullPath, { encoding: "utf8" });
                 const result = yield xml2js_1.parseStringPromise(data);
-                const nextVersion = service.getNextVersionTag();
+                const nextVersion = service.getBumpedVersion();
                 result.Project.PropertyGroup[0].Version = nextVersion;
                 const builder = new xml2js_1.Builder({ headless: true });
                 const xml = builder.buildObject(result);
@@ -550,7 +564,7 @@ class VersionFiles {
             try {
                 const file = fs_1.readFileSync(this.fullPath, { encoding: "utf8" });
                 const doc = js_yaml_1.load(file);
-                const nextVersion = service.getNextVersionTag();
+                const nextVersion = service.getBumpedVersion();
                 doc.appVersion = nextVersion;
                 fs_1.writeFileSync(this.fullPath, js_yaml_1.dump(doc));
                 core_1.debug(`Service ${service.name}: Updated Helm Chart appVersion to ${nextVersion}. Path: ${this.fullPath}.\n New Content:\n ${JSON.stringify(js_yaml_1.load(file), null, 2)}`);

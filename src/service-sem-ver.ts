@@ -93,6 +93,9 @@ export class ServiceSemVer {
       const commitRes = await git.commit(this.getNextVersionMessage())
       debug(JSON.stringify(commitRes, null, 2))
 
+      const generatedCodeCommitRes = await git.commitGeneratedCode(`Generated files - upping ${this.getNextVersionTag}`);
+      console.log(JSON.stringify(generatedCodeCommitRes))
+
       await this.CreateTag(git);
       await this.CreateRelease(git);
     } catch (error) {
