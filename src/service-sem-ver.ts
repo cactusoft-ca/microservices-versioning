@@ -14,6 +14,7 @@ export class ServiceSemVer {
   public tagged: boolean = false;
   public released: boolean = false;
   public modifedFiles = new Array<{type: VersionFileType, path: string}>()
+  public releaseURL = "";
 
   constructor(
     name: string,
@@ -113,6 +114,7 @@ export class ServiceSemVer {
     const createReleaseRes = await git.createRelease(context.repo.owner, context.repo.repo, this.getNextVersionTag(), "a body", true);
     debug(JSON.stringify(createReleaseRes, null, 2));
 
-    this.tagged = false;
+    this.released = true;
+    this.releaseURL = createReleaseRes?.data.html_url ?? "";
   }
 }

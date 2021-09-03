@@ -137,7 +137,7 @@ function setOutputsAndAnnotations(errors: { service: string; error: string; }[],
   if (errors.length > 0) {
     for (const error of errors) {
       if (error.error.includes('An expected service root folder is missing')) {
-        warning(`Service not BUMPED: "${error.service}".\n ${error.error}`)
+        actionError(`Service not BUMPED: "${error.service}".\n ${error.error}`)
       } else {
         warning(`Service bump warning:: "${error.service}".\n ${error.error}`);
       }
@@ -151,7 +151,8 @@ function setOutputsAndAnnotations(errors: { service: string; error: string; }[],
     newVersion: string | null,
     modifiedFiles: { type: VersionFileType, path: string }[],
     tagged: boolean,
-    released: boolean
+    released: boolean,
+    releaseURL: string
   }>()
 
   for (const svc of versionsByService) {
@@ -162,11 +163,12 @@ function setOutputsAndAnnotations(errors: { service: string; error: string; }[],
       newVersion: svc.getBumpedVersion(),
       modifiedFiles: svc.modifedFiles,
       tagged: svc.tagged,
-      released: svc.released
+      released: svc.released,
+      releaseURL: svc.releaseURL
     })
   }
 
-  setOutput('results', JSON.stringify(results))
+  setOutput('results', JSON.stringify(results, null, 2))
 }
 
 function getVersionFilesTypesAndPaths(serviceName: string, metadataFilePath: string, workingDirectory: string) {

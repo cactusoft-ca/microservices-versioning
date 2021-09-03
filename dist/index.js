@@ -140,12 +140,6 @@ class GitService {
                     draft,
                     prerelease
                 });
-                // Get the ID, html_url, and upload URL for the created Release from the response
-                const { data: { id: releaseId, html_url: htmlUrl, upload_url: uploadUrl } } = createReleaseResponse;
-                // Set the output variables for use by other actions: https://github.com/actions/toolkit/tree/master/packages/core#inputsoutputs
-                core_1.setOutput('id', releaseId);
-                core_1.setOutput('html_url', htmlUrl);
-                core_1.setOutput('upload_url', uploadUrl);
                 return createReleaseResponse;
             }
             catch (error) {
@@ -284,7 +278,7 @@ function setOutputsAndAnnotations(errors, versionsByService) {
     if (errors.length > 0) {
         for (const error of errors) {
             if (error.error.includes('An expected service root folder is missing')) {
-                core_1.warning(`Service not BUMPED: "${error.service}".\n ${error.error}`);
+                core_1.error(`Service not BUMPED: "${error.service}".\n ${error.error}`);
             }
             else {
                 core_1.warning(`Service bump warning:: "${error.service}".\n ${error.error}`);
@@ -300,10 +294,11 @@ function setOutputsAndAnnotations(errors, versionsByService) {
             newVersion: svc.getBumpedVersion(),
             modifiedFiles: svc.modifedFiles,
             tagged: svc.tagged,
-            released: svc.released
+            released: svc.released,
+            releaseURL: svc.releaseURL
         });
     }
-    core_1.setOutput('results', JSON.stringify(results));
+    core_1.setOutput('results', JSON.stringify(results, null, 2));
 }
 function getVersionFilesTypesAndPaths(serviceName, metadataFilePath, workingDirectory) {
     const versionFiles = new Array();
@@ -404,6 +399,7 @@ class ServiceSemVer {
         this.tagged = false;
         this.released = false;
         this.modifedFiles = new Array();
+        this.releaseURL = "";
         core_1.debug(`Context repo owner from GitService: ${github_1.context.repo.owner}`);
         this.name = name;
         this.releaseType = releaseType;
@@ -474,10 +470,12 @@ class ServiceSemVer {
         });
     }
     CreateRelease(git) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const createReleaseRes = yield git.createRelease(github_1.context.repo.owner, github_1.context.repo.repo, this.getNextVersionTag(), "a body", true);
             core_1.debug(JSON.stringify(createReleaseRes, null, 2));
-            this.tagged = false;
+            this.released = true;
+            this.releaseURL = (_a = createReleaseRes === null || createReleaseRes === void 0 ? void 0 : createReleaseRes.data.html_url) !== null && _a !== void 0 ? _a : "";
         });
     }
 }

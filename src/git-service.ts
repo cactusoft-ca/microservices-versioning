@@ -113,17 +113,6 @@ export class GitService {
                 draft,
                 prerelease
             });
-
-            // Get the ID, html_url, and upload URL for the created Release from the response
-            const {
-                data: { id: releaseId, html_url: htmlUrl, upload_url: uploadUrl }
-            } = createReleaseResponse;
-
-            // Set the output variables for use by other actions: https://github.com/actions/toolkit/tree/master/packages/core#inputsoutputs
-            setOutput('id', releaseId);
-            setOutput('html_url', htmlUrl);
-            setOutput('upload_url', uploadUrl);
-
             return createReleaseResponse;
         } catch (error) {
             setFailed(error.message);
