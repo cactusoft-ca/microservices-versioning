@@ -1,10 +1,7 @@
 {
-  "printWidth": 80,
-  "tabWidth": 2,
-  "useTabs": false,
-  "semi": false,
+  "printWidth": 120,
   "singleQuote": true,
-  "trailingComma": "none",
-  "bracketSpacing": false,
-  "arrowParens": "avoid"
+  "useTabs": false,
+  "arrowParens": "avoid",
+  "endOfLine": "crlf"
 }
